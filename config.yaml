@@ -1,6 +1,6 @@
 theme: starter-academic
 title: Евгений Матеров
-baseurl: ''
+baseurl: 'https://materov-blog.netlify.app/'
 copyright: '&copy; Евгений Матеров {year}'
 enableGitInfo: no
 defaultContentLanguage: en

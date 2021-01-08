@@ -24,9 +24,6 @@ projects: []
 
 # Установка библиотеки
 
-```{r echo=FALSE}
-#reticulate::install_miniconda()
-```
 
 
 
