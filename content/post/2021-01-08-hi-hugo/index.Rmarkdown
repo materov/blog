@@ -1,0 +1,59 @@
+---
+title: Использование глубокого обучения для анализа временных рядов
+author: admin
+date: '2021-01-08'
+slug: hi-hugo
+categories: ["R", "Deep Learning"]
+tags: ["R Markdown", "time series"]
+subtitle: 'использование интеграции Python GluonTS Deep Learning Library в язык программирования R для прогнозирования временных рядов'
+summary: 'Мы покажем некоторые примеры использования глубокого обучения для прогнозирования временных рядов на примере экспериментальной библиотеки `modeltime.gluonts`'
+authors: []
+lastmod: '2021-01-08T18:02:43+07:00'
+featured: yes
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: yes
+projects: []
+---
+
+В настоящий момент существует множество различных способов для прогнозирования временных рядов методами машинного обучения, включая методы **Deep Learning**. Пример такого рода [построения моделей](https://www.tensorflow.org/tutorials/structured_data/time_series) сверточных и рекуррентных нейронных сетей (CNN и RNN) на основе **Deep Learning** опубликован на сайте руководства фреймвока [Keras](https://www.google.com).
+
+Наша цель - разобраться с экспериментальной библиотекой [modeltime.gluonts](https://github.com/business-science/modeltime.gluonts) на примере временных рядов...
+
+
+# Установка библиотеки
+
+```{r echo=FALSE}
+#reticulate::install_miniconda()
+```
+
+
+
+```{r echo=FALSE}
+library(ggplot2)
+library(silgelib)
+oplot <- ggplot(Orange, aes(x = age, 
+                   y = circumference, 
+                   colour = Tree)) +
+  geom_point() +
+  geom_line() +
+  guides(colour = FALSE) +
+  theme_plex()
+oplot
+```
+
+```{r}
+summary(iris)
+```
+
+{{% alert note %}}
+Пример поста на R, сделанного R Markdown.
+
+{{% /alert %}}
+
+
+
+
+
+
