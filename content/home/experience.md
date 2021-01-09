@@ -62,7 +62,7 @@ experience:
   - title: Visiting Assistant Professor
     company: University of Massachusstes, Amherst
     company_url: 'https://www.math.umass.edu/'
-    location: Massachusstes
+    location: USA
     date_start: '2005-05-01'
     date_end: '2008-08-01'
     description: Postdoctoral fellow.

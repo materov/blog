@@ -41,10 +41,10 @@
   translation: Показать предпочтения
 
 - id: theme_light
-  translation: Светлая
+  translation: Светлая тема
 
 - id: theme_dark
-  translation: Темная
+  translation: Темная тема
 
 - id: theme_auto
   translation: Автоматически
@@ -166,10 +166,10 @@
   translation: Без категории
 
 - id: pub_conf
-  translation: Статья для конференции
+  translation: Тезисы конференции
 
 - id: pub_journal
-  translation: Статья для журнала
+  translation: Статья
 
 - id: pub_preprint
   translation: Препринт
