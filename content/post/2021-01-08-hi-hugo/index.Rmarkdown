@@ -2,10 +2,10 @@
 title: Использование машинного обучения для анализа временных рядов
 author: admin
 date: '2021-01-09'
-slug: hi-hugo
+slug: modeltime
 categories: ["R"]
 tags: ["R Markdown", "временные ряды", "машинное обучение"]
-subtitle: 'моделирование нескольких моделей машинного обучения в языке программирования R для прогнозирования временных рядов'
+subtitle: 'прогнозирование временных рядов с помощью одновременного использования нескольких моделей в языке программирования R'
 summary: 'Мы покажем некоторые примеры использования машинного обучения для моделирования и прогнозирования временных рядов на примере  библиотеки `modeltime`.'
 authors: 
 - admin
@@ -44,16 +44,60 @@ remotes::install_github("business-science/modeltime")
 
 # Исходные данные
 
-Поключим небходимые библиотеки
-```r
-library(modeltime)
+Поключим небходимые библиотеки.
+
+```{r warning=FALSE, message=FALSE}
+
+library(readxl)
 library(magrittr)
 library(tidyverse)
 library(lubridate)
+
+library(tidymodels)
+library(modeltime)
 library(timetk)
 ```
 
 Рассмотрим фондовые данные по гидрологии с данными по уровням воды в Российской Федерации за 2008-2015 года.
+Загрузим данные с **GitHub**:
+
+```{r warning=FALSE, message=FALSE}
+url <- "https://raw.githubusercontent.com/materov/hydro_data/main/df_hydro.csv"
+
+df_hydro <- readr::read_csv(url)
+```
+
+Исходные данные содержат `r format(nrow(df_hydro), big.mark = " ")` записей и имеют две переменных: `date` и `level`, отвечающих за дату наблюдения и уровень воды.
+
+```{r warning=FALSE, message=FALSE}
+df_hydro
+```
+
+Сформируем данные для временного ряда: рассмотрим максимальные значения разлива рек.
+
+```{r warning=FALSE, message=FALSE}
+fire_time_series_tbl <-
+df_hydro %>% 
+  group_by(date) %>% 
+  summarise(value = max(level)) 
+```
+
+Преобразуем `date` в формат даты:
+
+```{r warning=FALSE, message=FALSE}
+fire_time_series_tbl$date %<>% as.Date()
+```
+
+Визуализируем получившийся временной ряд:
+
+```r
+fire_time_series_tbl %>% 
+  ggplot(aes(x = date, y = value)) + geom_line()
+```
+
+![Исходный временной ряд](ts_filtered_ml_initial_blog.png)
+
+Из графика видно, что временной ряд имеет периодический характер.
 
 # Моделирование временных рядов
 
@@ -69,6 +113,32 @@ library(timetk)
 Кратко покажем реализацию этих шагов.
 
 *Шаг 1.* Разбиение на обучающую и тестовую выборку можно делать либо указав временной параметр, либо процентные соотношения.
+
+```{r warning=FALSE, message=FALSE}
+# 1. Разделение выборки на обучающую и тестовую ------------------------------
+
+splits <- fire_time_series_tbl %>%  
+  rsample::initial_time_split(prop = 0.9)
+
+# альтернативный вариант
+# splits <- fire_time_series_tbl %>%
+#   time_series_split(assess     = "2 months", 
+#                     cumulative = TRUE)
+```
+
+```r
+splits %>%
+  tk_time_series_cv_plan() %>%
+  plot_time_series_cv_plan(date, value, 
+                           .interactive = FALSE) +
+  labs(title = "Разделение временного ряда на обучающую и тестовую выборку",
+       subtitle = "в качестве тестовой выборки рассмотрены 10% данных",
+       color = "Выборка:") +
+  scale_x_date(date_breaks = "12 months",
+               date_labels = "%Y")
+```
+
+![Разделение временного ряда на обучающую и тестовую выборку](ts_ml_train_test_blog.png)
 
 *Шаг 2.* Следующим этапом является создание и подгонка моделей. Ключевая особенность `modeltime` заключается в возможности *работы с несколькими моделями одновременно*. Это позволяет сравнивать модели, выбирая наилучшие результаты.
 Вот некоторые стандартные модели встроенные в `modeltime` (полный список моделей, который постоянно дополняется, можно получить на [сайте библиотеки](https://business-science.github.io/modeltime/articles/modeltime-model-list.html)):
@@ -87,6 +157,76 @@ library(timetk)
 -	Создание типа модели, так называемого **рецепта** (recipe) предварительной обработки используя `tidymodels`.
 -	Создание спецификаций модели.
 -	Использование рабочего процесса для объединения спецификаций модели, предобработки и подходящей модели.
+
+Построим несколько моделей для данного временного ряда. 
+
+1. Линейная регрессия:
+
+```{r warning=FALSE, message=FALSE}
+# 2. Создание и подгонка нескольких моделей ----------------------------------
+
+# Модель 1: lm ----
+# Линейная регрессия
+model_fit_lm <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(value ~ as.numeric(date) + factor(month(date), ordered = FALSE),
+      data = training(splits))
+```
+
+2. Классическая модель **ARIMA** с автоопределением параметров:
+
+```{r warning=FALSE, message=FALSE}
+# Модель 2: auto_arima ----
+# ARIMA
+model_fit_arima <- arima_reg() %>%
+  set_engine(engine = "auto_arima") %>%
+  fit(value ~ date, data = training(splits))
+```
+
+3. Модель **Prophet Boost**:
+
+```{r warning=FALSE, message=FALSE}
+# Модель 3: arima_boost ----
+# ARIMA с бустингом (уменьшение ошибок) с помощью XGBoost
+model_fit_arima_boosted <- arima_boost(
+  min_n = 2,
+  learn_rate = 0.015) %>%
+  set_engine(engine = "auto_arima_xgboost") %>%
+  fit(value ~ date + as.numeric(date) + 
+        factor(month(date), ordered = F),
+      data = training(splits))
+```
+
+4.
+
+```{r warning=FALSE, message=FALSE}
+
+```
+
+5. 
+
+```{r warning=FALSE, message=FALSE}
+
+```
+
+6. 
+
+```{r warning=FALSE, message=FALSE}
+
+```
+
+7. 
+
+```{r warning=FALSE, message=FALSE}
+
+```
+
+8. 
+
+```{r warning=FALSE, message=FALSE}
+
+```
+
 
 *Шаг 3.* Модели прописываются и добавляются в единую *таблицу моделей*, в которой до включения можно настраивать параметры, а затем проходит их подгонка/масштабирование, проверка на соответствие и калибровка по отношению к тестовой выборке. Далее происходит оценка точности качества моделей на тестовой выборке используя различные показатели точности:
 -	MAE – средняя абсолютная ошибка;
@@ -114,24 +254,6 @@ library(timetk)
 
 Отметим, что для улучшения точности прогноза сильно неструктурированных данных, например, при отсутствии явно выраженных сезонных компонент, можно использовать для моделирования нейронные (как правило, RNN, LSTM или CNN) сети, однако это выходит за рамки настоящей статьи, и обучение нейронной сети – процесс гораздо более трудоемкий, чем рассмотренное в работе моделирование, что может оказаться неэффективным с точки зрения временных затрат.
 
-
-
-```{r echo=FALSE}
-library(ggplot2)
-library(silgelib)
-oplot <- ggplot(Orange, aes(x = age, 
-                   y = circumference, 
-                   colour = Tree)) +
-  geom_point() +
-  geom_line() +
-  guides(colour = FALSE) +
-  theme_plex()
-oplot
-```
-
-```{r}
-summary(iris)
-```
 
 
 
