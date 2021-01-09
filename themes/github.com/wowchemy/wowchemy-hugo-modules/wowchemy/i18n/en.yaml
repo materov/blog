@@ -67,7 +67,7 @@
   translation: Видео
 
 - id: btn_code
-  translation: Код
+  translation: Ссылка
 
 - id: btn_dataset
   translation: Набор данных
@@ -90,13 +90,13 @@
 # About widget
 
 - id: interests
-  translation: Интересы
+  translation: Область интересов
 
 - id: education
   translation: Образование
 
 - id: user_profile_latest
-  translation: Последние
+  translation: Последние публикации
 
 # Accomplishments widget
 

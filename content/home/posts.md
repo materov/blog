@@ -10,7 +10,7 @@ headless: true
 weight: 10
 
 title: Последние публикации в блоге
-subtitle:
+subtitle: 'анализ, визулизация данных и машинное обучение'
 
 content:
   # Page type to display. E.g. post, talk, publication...
