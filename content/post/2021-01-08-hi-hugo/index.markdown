@@ -37,7 +37,7 @@ projects: []
 ```r
 install.packages("modeltime")
 ```
-или девелоперскую версию, доступню на [GitHub](https://business-science.github.io/modeltime/)
+Девелоперская версия доступна на [GitHub](https://business-science.github.io/modeltime/):
 ```r
 remotes::install_github("business-science/modeltime")
 ```
@@ -212,7 +212,7 @@ model_fit_arima <- arima_reg() %>%
 
 ```r
 # Модель 3: arima_boost ----
-# ARIMA с бустингом (уменьшение ошибок) с помощью XGBoost
+# ARIMA с бустингом (уменьшение ошибок с помощью XGBoost)
 model_fit_arima_boosted <- arima_boost(
   min_n = 2,
   learn_rate = 0.015) %>%
@@ -222,25 +222,197 @@ model_fit_arima_boosted <- arima_boost(
       data = training(splits))
 ```
 
-4.
+4. Модель **ETS**:
+
+
+```r
+# Модель 4: ets ----
+# экспоненциальное сглаживание
+model_fit_ets <- exp_smoothing() %>%
+  set_engine(engine = "ets") %>%
+  fit(value ~ date, data = training(splits))
+```
+
+5. Модель **Prophet**
+
+
+```r
+# Модель 5: prophet ----
+# Prophet от Facebook
+model_fit_prophet <- prophet_reg() %>%
+  set_engine("prophet", 
+             yearly.seasonality = TRUE) %>%
+  fit(value ~ date, training(splits))
+```
+
+6. Модель **MARS**
+
+
+```r
+# Модель 6: MARS ----
+# Пример "рецепта" предобработки
+recipe_spec <- recipe(value ~ date, data = training(splits)) %>%
+  step_date(date, features = "month", ordinal = FALSE) %>%
+  step_mutate(date_num = as.numeric(date)) %>%
+  step_normalize(date_num) %>%
+  step_rm(date)
+```
+
+
+```r
+# вид "рецепта"
+recipe_spec %>% prep() %>% juice()
+```
+
+```
+## # A tibble: 2,629 x 3
+##    value date_month date_num
+##    <dbl> <fct>         <dbl>
+##  1   973 янв           -1.73
+##  2   971 янв           -1.73
+##  3   969 янв           -1.73
+##  4   968 янв           -1.73
+##  5   969 янв           -1.73
+##  6   968 янв           -1.72
+##  7   966 янв           -1.72
+##  8   965 янв           -1.72
+##  9   963 янв           -1.72
+## 10   962 янв           -1.72
+## # … with 2,619 more rows
+```
 
 
 
-5. 
+```r
+# спецификации модели MARS (Computational engine: earth)
+model_spec_mars <- mars(mode = "regression") %>%
+  set_engine("earth")
+```
 
 
 
-6. 
+```r
+# собираем модель MARS
+wflw_fit_mars <- workflow()  %>%
+  add_recipe(recipe_spec)    %>%
+  add_model(model_spec_mars) %>%
+  fit(training(splits))
+```
+
+7. Модель **Prophet Boost**
+
+
+```r
+# Модель 7: Prophet Boost ----
+# рецепт
+recipe_spec <- recipe(value ~ date, training(splits)) %>%
+  step_timeseries_signature(date) %>%
+  step_rm(contains("am.pm"), contains("hour"), contains("minute"),
+          contains("second"), contains("xts")) %>%
+  step_fourier(date, period = 365, K = 5) %>%
+  step_dummy(all_nominal())
+```
 
 
 
-7. 
+```r
+# спецификации
+model_spec_prophet_boost <- prophet_boost() %>%
+  set_engine("prophet_xgboost", yearly.seasonality = TRUE)
+```
 
 
+```r
+# сборка модели
+workflow_fit_prophet_boost <- workflow() %>%
+  add_model(model_spec_prophet_boost)    %>%
+  add_recipe(recipe_spec)                %>%
+  fit(training(splits))
+```
 
-8. 
+8. Модель **glmnet**
 
 
+```r
+# Модель 8: glmnet ----
+# recipe
+recipe_spec <- recipe(value ~ date, training(splits)) %>%
+  step_timeseries_signature(date) %>%
+  step_rm(contains("am.pm"), contains("hour"), contains("minute"),
+          contains("second"), contains("xts")) %>%
+  step_fourier(date, period = 365, K = 5) %>%
+  step_dummy(all_nominal())
+```
+
+
+```r
+# просмотр "рецепта"
+recipe_spec %>% prep() %>% juice()
+```
+
+```
+## # A tibble: 2,629 x 47
+##    date       value date_index.num date_year date_year.iso date_half
+##    <date>     <dbl>          <dbl>     <int>         <int>     <int>
+##  1 2008-01-01   973     1199145600      2008          2008         1
+##  2 2008-01-02   971     1199232000      2008          2008         1
+##  3 2008-01-03   969     1199318400      2008          2008         1
+##  4 2008-01-04   968     1199404800      2008          2008         1
+##  5 2008-01-05   969     1199491200      2008          2008         1
+##  6 2008-01-06   968     1199577600      2008          2008         1
+##  7 2008-01-07   966     1199664000      2008          2008         1
+##  8 2008-01-08   965     1199750400      2008          2008         1
+##  9 2008-01-09   963     1199836800      2008          2008         1
+## 10 2008-01-10   962     1199923200      2008          2008         1
+## # … with 2,619 more rows, and 41 more variables: date_quarter <int>,
+## #   date_month <int>, date_day <int>, date_wday <int>, date_mday <int>,
+## #   date_qday <int>, date_yday <int>, date_mweek <int>, date_week <int>,
+## #   date_week.iso <int>, date_week2 <int>, date_week3 <int>, date_week4 <int>,
+## #   date_mday7 <int>, date_sin365_K1 <dbl>, date_cos365_K1 <dbl>,
+## #   date_sin365_K2 <dbl>, date_cos365_K2 <dbl>, date_sin365_K3 <dbl>,
+## #   date_cos365_K3 <dbl>, date_sin365_K4 <dbl>, date_cos365_K4 <dbl>,
+## #   date_sin365_K5 <dbl>, date_cos365_K5 <dbl>, date_month.lbl_01 <dbl>,
+## #   date_month.lbl_02 <dbl>, date_month.lbl_03 <dbl>, date_month.lbl_04 <dbl>,
+## #   date_month.lbl_05 <dbl>, date_month.lbl_06 <dbl>, date_month.lbl_07 <dbl>,
+## #   date_month.lbl_08 <dbl>, date_month.lbl_09 <dbl>, date_month.lbl_10 <dbl>,
+## #   date_month.lbl_11 <dbl>, date_wday.lbl_1 <dbl>, date_wday.lbl_2 <dbl>,
+## #   date_wday.lbl_3 <dbl>, date_wday.lbl_4 <dbl>, date_wday.lbl_5 <dbl>,
+## #   date_wday.lbl_6 <dbl>
+```
+
+
+```r
+# спецификация модели
+model_spec_glmnet <- linear_reg(penalty = 0.01, mixture = 0.5) %>%
+  set_engine("glmnet")
+```
+
+
+```r
+# сборка модели glmnet
+workflow_fit_glmnet <- workflow() %>%
+  add_model(model_spec_glmnet) %>%
+  add_recipe(recipe_spec %>% step_rm(date)) %>%
+  fit(training(splits))
+```
+
+9. Модель **Random Forest**
+
+
+```r
+# Модель 9: Random Forest ----
+model_spec_rf <- rand_forest(trees = 500, min_n = 50) %>%
+  set_engine("randomForest")
+```
+
+
+```r
+# сборка модели Random Forest
+workflow_fit_rf <- workflow() %>%
+  add_model(model_spec_rf) %>%
+  add_recipe(recipe_spec %>% step_rm(date)) %>%
+  fit(training(splits))
+```
 
 
 *Шаг 3.* Модели прописываются и добавляются в единую *таблицу моделей*, в которой до включения можно настраивать параметры, а затем проходит их подгонка/масштабирование, проверка на соответствие и калибровка по отношению к тестовой выборке. Далее происходит оценка точности качества моделей на тестовой выборке используя различные показатели точности:
@@ -251,7 +423,81 @@ model_fit_arima_boosted <- arima_boost(
 -	RMSE – среднеквадратическая ошибка;
 -	RSQ – показатель $R^2$.
 
+
+```r
+# Добавление подогнанных моделей в таблицы моделей ------------------------
+
+models_tbl <- modeltime_table(
+    model_fit_lm,
+    model_fit_arima_boosted,
+    model_fit_ets,
+    wflw_fit_mars,
+  # --
+  model_fit_prophet,
+  workflow_fit_prophet_boost,
+   workflow_fit_glmnet,
+   workflow_fit_rf
+)
+```
+
+
+
+```r
+# просмотр таблицы моделей
+models_tbl
+```
+
+```
+## # Modeltime Table
+## # A tibble: 8 x 3
+##   .model_id .model     .model_desc                                      
+##       <int> <list>     <chr>                                            
+## 1         1 <fit[+]>   LM                                               
+## 2         2 <fit[+]>   ARIMA(4,0,5) WITH NON-ZERO MEAN W/ XGBOOST ERRORS
+## 3         3 <fit[+]>   ETS(M,AD,N)                                      
+## 4         4 <workflow> EARTH                                            
+## 5         5 <fit[+]>   PROPHET                                          
+## 6         6 <workflow> PROPHET W/ XGBOOST ERRORS                        
+## 7         7 <workflow> GLMNET                                           
+## 8         8 <workflow> RANDOMFOREST
+```
+
+
 *Шаг 4.* *Калибровка*, по сути, - это способ определения доверительных интервалов и метрик точности, при этом калибровочные данные - это спрогнозированные значения и невязки, которые вычисляются на основе данных вне выборки.
+
+
+
+```r
+# Калибровка --------------------------------------------------------------
+
+calibration_tbl <- models_tbl %>%
+  modeltime_calibrate(new_data = testing(splits))
+```
+
+
+
+```r
+# таблица калиброванных моделей
+# добавились .type и .calibration_data
+calibration_tbl
+```
+
+```
+## # Modeltime Table
+## # A tibble: 8 x 5
+##   .model_id .model    .model_desc                        .type .calibration_data
+##       <int> <list>    <chr>                              <chr> <list>           
+## 1         1 <fit[+]>  LM                                 Test  <tibble [293 × 4…
+## 2         2 <fit[+]>  ARIMA(4,0,5) WITH NON-ZERO MEAN W… Test  <tibble [293 × 4…
+## 3         3 <fit[+]>  ETS(M,AD,N)                        Test  <tibble [293 × 4…
+## 4         4 <workflo… EARTH                              Test  <tibble [293 × 4…
+## 5         5 <fit[+]>  PROPHET                            Test  <tibble [293 × 4…
+## 6         6 <workflo… PROPHET W/ XGBOOST ERRORS          Test  <tibble [293 × 4…
+## 7         7 <workflo… GLMNET                             Test  <tibble [293 × 4…
+## 8         8 <workflo… RANDOMFOREST                       Test  <tibble [293 × 4…
+```
+
+
 
 *Шаг 5.* Сформированные модели проверяются на тестовых данных и визуализируются.
 
