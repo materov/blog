@@ -5,7 +5,7 @@ lastmod: "2018-09-09T00:00:00Z"
 linktitle: Высшая математика (2-й семестр 2020-2021 учебного года)
 menu:
   example:
-    name: Overview
+    name: Обзор курса
     weight: 1
 summary: Learn how to use Academic's docs layout for publishing online courses, software
   documentation, and tutorials.

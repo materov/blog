@@ -110,7 +110,9 @@ fire_time_series_tbl %>%
 5.	Выполнение прогноза для тестового множества и оценка точности.
 6.	*Корректировку моделей* на полный набор данных и прогнозирование на будущие значения.
 
-Кратко покажем реализацию этих шагов.
+Кратко покажем реализацию этих шагов. Ниже показана иллюстрация оптимизированного рабочего процесса, рассмотренная на сайте библиотеки.
+
+![Иллюстрация оптимизированного рабочего процесса прогнозирования временного ряда](modeltime_workflow.jpg)
 
 *Шаг 1.* Разбиение на обучающую и тестовую выборку можно делать либо указав временной параметр, либо процентные соотношения.
 
@@ -160,7 +162,7 @@ splits %>%
 
 Построим несколько моделей для данного временного ряда. 
 
-1. Линейная регрессия:
+1. Линейная регрессия
 
 ```{r warning=FALSE, message=FALSE}
 # 2. Создание и подгонка нескольких моделей ----------------------------------
@@ -173,7 +175,7 @@ model_fit_lm <- linear_reg() %>%
       data = training(splits))
 ```
 
-2. Классическая модель **ARIMA** с автоопределением параметров:
+2. Классическая модель **ARIMA** с автоопределением параметров
 
 ```{r warning=FALSE, message=FALSE}
 # Модель 2: auto_arima ----
@@ -183,7 +185,7 @@ model_fit_arima <- arima_reg() %>%
   fit(value ~ date, data = training(splits))
 ```
 
-3. Модель **Prophet Boost**:
+3. Модель **ARIMA Boost**
 
 ```{r warning=FALSE, message=FALSE}
 # Модель 3: arima_boost ----
@@ -197,7 +199,7 @@ model_fit_arima_boosted <- arima_boost(
       data = training(splits))
 ```
 
-4. Модель **ETS**:
+4. Модель **ETS**
 
 ```{r warning=FALSE, message=FALSE}
 # Модель 4: ets ----
@@ -245,7 +247,7 @@ model_spec_mars <- mars(mode = "regression") %>%
 
 ```{r warning=FALSE, message=FALSE}
 # собираем модель MARS
-wflw_fit_mars <- workflow()  %>%
+workflow_fit_mars <- workflow()  %>%
   add_recipe(recipe_spec)    %>%
   add_model(model_spec_mars) %>%
   fit(training(splits))
@@ -341,14 +343,15 @@ workflow_fit_rf <- workflow() %>%
 
 models_tbl <- modeltime_table(
     model_fit_lm,
+    model_fit_arima,
     model_fit_arima_boosted,
     model_fit_ets,
-    wflw_fit_mars,
-  # --
-  model_fit_prophet,
-  workflow_fit_prophet_boost,
-   workflow_fit_glmnet,
-   workflow_fit_rf
+    model_fit_prophet,
+    # модели машинного обучения
+    workflow_fit_mars,
+    workflow_fit_prophet_boost,
+    workflow_fit_glmnet,
+    workflow_fit_rf
 )
 ```
 
@@ -381,6 +384,15 @@ calibration_tbl
 *Шаг 5.* Сформированные модели проверяются на тестовых данных и визуализируются.
 
 Также, составляется таблица ошибок, использующая рассмотренные выше показатели точности, пример такого рода таблицы показан ниже.
+
+```r
+# таблица ошибок
+calibration_tbl %>%
+  modeltime_accuracy() %>%
+  table_modeltime_accuracy(.interactive = F) 
+```
+
+
 
 *Шаг 6.* Заключительный этап состоит в том, чтобы скорректировать модели, распространить их на полный набор данных и спрогнозировать будущие значения. 
 

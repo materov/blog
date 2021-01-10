@@ -27,7 +27,7 @@
   translation: Предыдущий
 
 - id: next
-  translation: Следующий
+  translation: Дальше
 
 - id: figure
   translation: "Рисунок %d:"

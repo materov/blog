@@ -131,7 +131,9 @@ fire_time_series_tbl %>%
 5.	Выполнение прогноза для тестового множества и оценка точности.
 6.	*Корректировку моделей* на полный набор данных и прогнозирование на будущие значения.
 
-Кратко покажем реализацию этих шагов.
+Кратко покажем реализацию этих шагов. Ниже показана иллюстрация оптимизированного рабочего процесса, рассмотренная на сайте библиотеки.
+
+![Иллюстрация оптимизированного рабочего процесса прогнозирования временного ряда](modeltime_workflow.jpg)
 
 *Шаг 1.* Разбиение на обучающую и тестовую выборку можно делать либо указав временной параметр, либо процентные соотношения.
 
@@ -182,7 +184,7 @@ splits %>%
 
 Построим несколько моделей для данного временного ряда. 
 
-1. Линейная регрессия:
+1. Линейная регрессия
 
 
 ```r
@@ -196,7 +198,7 @@ model_fit_lm <- linear_reg() %>%
       data = training(splits))
 ```
 
-2. Классическая модель **ARIMA** с автоопределением параметров:
+2. Классическая модель **ARIMA** с автоопределением параметров
 
 
 ```r
@@ -207,7 +209,7 @@ model_fit_arima <- arima_reg() %>%
   fit(value ~ date, data = training(splits))
 ```
 
-3. Модель **Prophet Boost**:
+3. Модель **ARIMA Boost**
 
 
 ```r
@@ -222,7 +224,7 @@ model_fit_arima_boosted <- arima_boost(
       data = training(splits))
 ```
 
-4. Модель **ETS**:
+4. Модель **ETS**
 
 
 ```r
@@ -293,7 +295,7 @@ model_spec_mars <- mars(mode = "regression") %>%
 
 ```r
 # собираем модель MARS
-wflw_fit_mars <- workflow()  %>%
+workflow_fit_mars <- workflow()  %>%
   add_recipe(recipe_spec)    %>%
   add_model(model_spec_mars) %>%
   fit(training(splits))
@@ -429,14 +431,15 @@ workflow_fit_rf <- workflow() %>%
 
 models_tbl <- modeltime_table(
     model_fit_lm,
+    model_fit_arima,
     model_fit_arima_boosted,
     model_fit_ets,
-    wflw_fit_mars,
-  # --
-  model_fit_prophet,
-  workflow_fit_prophet_boost,
-   workflow_fit_glmnet,
-   workflow_fit_rf
+    model_fit_prophet,
+    # модели машинного обучения
+    workflow_fit_mars,
+    workflow_fit_prophet_boost,
+    workflow_fit_glmnet,
+    workflow_fit_rf
 )
 ```
 
@@ -449,17 +452,18 @@ models_tbl
 
 ```
 ## # Modeltime Table
-## # A tibble: 8 x 3
+## # A tibble: 9 x 3
 ##   .model_id .model     .model_desc                                      
 ##       <int> <list>     <chr>                                            
 ## 1         1 <fit[+]>   LM                                               
-## 2         2 <fit[+]>   ARIMA(4,0,5) WITH NON-ZERO MEAN W/ XGBOOST ERRORS
-## 3         3 <fit[+]>   ETS(M,AD,N)                                      
-## 4         4 <workflow> EARTH                                            
+## 2         2 <fit[+]>   ARIMA(5,0,4) WITH NON-ZERO MEAN                  
+## 3         3 <fit[+]>   ARIMA(4,0,5) WITH NON-ZERO MEAN W/ XGBOOST ERRORS
+## 4         4 <fit[+]>   ETS(M,AD,N)                                      
 ## 5         5 <fit[+]>   PROPHET                                          
-## 6         6 <workflow> PROPHET W/ XGBOOST ERRORS                        
-## 7         7 <workflow> GLMNET                                           
-## 8         8 <workflow> RANDOMFOREST
+## 6         6 <workflow> EARTH                                            
+## 7         7 <workflow> PROPHET W/ XGBOOST ERRORS                        
+## 8         8 <workflow> GLMNET                                           
+## 9         9 <workflow> RANDOMFOREST
 ```
 
 
@@ -484,17 +488,18 @@ calibration_tbl
 
 ```
 ## # Modeltime Table
-## # A tibble: 8 x 5
+## # A tibble: 9 x 5
 ##   .model_id .model    .model_desc                        .type .calibration_data
 ##       <int> <list>    <chr>                              <chr> <list>           
 ## 1         1 <fit[+]>  LM                                 Test  <tibble [293 × 4…
-## 2         2 <fit[+]>  ARIMA(4,0,5) WITH NON-ZERO MEAN W… Test  <tibble [293 × 4…
-## 3         3 <fit[+]>  ETS(M,AD,N)                        Test  <tibble [293 × 4…
-## 4         4 <workflo… EARTH                              Test  <tibble [293 × 4…
+## 2         2 <fit[+]>  ARIMA(5,0,4) WITH NON-ZERO MEAN    Test  <tibble [293 × 4…
+## 3         3 <fit[+]>  ARIMA(4,0,5) WITH NON-ZERO MEAN W… Test  <tibble [293 × 4…
+## 4         4 <fit[+]>  ETS(M,AD,N)                        Test  <tibble [293 × 4…
 ## 5         5 <fit[+]>  PROPHET                            Test  <tibble [293 × 4…
-## 6         6 <workflo… PROPHET W/ XGBOOST ERRORS          Test  <tibble [293 × 4…
-## 7         7 <workflo… GLMNET                             Test  <tibble [293 × 4…
-## 8         8 <workflo… RANDOMFOREST                       Test  <tibble [293 × 4…
+## 6         6 <workflo… EARTH                              Test  <tibble [293 × 4…
+## 7         7 <workflo… PROPHET W/ XGBOOST ERRORS          Test  <tibble [293 × 4…
+## 8         8 <workflo… GLMNET                             Test  <tibble [293 × 4…
+## 9         9 <workflo… RANDOMFOREST                       Test  <tibble [293 × 4…
 ```
 
 
@@ -502,6 +507,15 @@ calibration_tbl
 *Шаг 5.* Сформированные модели проверяются на тестовых данных и визуализируются.
 
 Также, составляется таблица ошибок, использующая рассмотренные выше показатели точности, пример такого рода таблицы показан ниже.
+
+```r
+# таблица ошибок
+calibration_tbl %>%
+  modeltime_accuracy() %>%
+  table_modeltime_accuracy(.interactive = F) 
+```
+
+
 
 *Шаг 6.* Заключительный этап состоит в том, чтобы скорректировать модели, распространить их на полный набор данных и спрогнозировать будущие значения. 
 
