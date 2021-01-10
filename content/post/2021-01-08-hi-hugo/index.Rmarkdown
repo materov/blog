@@ -403,7 +403,110 @@ calibration_tbl %>%
   modeltime_accuracy() %>%
   table_modeltime_accuracy(.interactive = F) 
 ```
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+library(tidyverse)
 
+d <- tribble(
+  ~.model_id,
+  ~.model_desc,
+  ~.type,
+  ~mae,
+  ~mape,
+  ~mase,
+  ~smape,
+  ~rmse,
+  ~rsq,
+  #--|--|--|--|--|--|--|--|----
+  1,
+  "LM",
+  "Test",
+  134.13,
+  9.46,
+  7.12,
+  9.5,
+  232.13,
+  0.68,
+  2,
+  "ARIMA(5,0,4) WITH NON-ZERO MEAN",
+  "Test",
+  233.95,
+  16.09,
+  12.42,
+  17.72,
+  406.55,
+  0.02,
+  3,
+  "ARIMA(4,0,5) WITH NON-ZERO MEAN W/ XGBOOST ERRORS",
+  "Test",
+  235.84,
+  16.42,
+  12.52,
+  17.91,
+  403.69,
+  0.02,
+  4,
+  "ETS(M,AD,N)",
+  "Test",
+  325.55,
+  22.08,
+  17.28,
+  27.24,
+  514.37,
+  0.02,
+  5,
+  "PROPHET",
+  "Test",
+  148.64,
+  13.76,
+  7.89,
+  12.76,
+  166.18,
+  0.94,
+  6,
+  "EARTH",
+  "Test",
+  344.41,
+  29.04,
+  18.29,
+  35.21,
+  399.23,
+  0.61,
+  7,
+  "PROPHET W/ XGBOOST ERRORS",
+  "Test",
+  74.83,
+  5.79,
+  3.97,
+  5.75,
+  117.65,
+  0.94,
+  8,
+  "GLMNET",
+  "Test",
+  92.95,
+  6.89,
+  4.94,
+  7.02,
+  148.54,
+  0.89,
+  9,
+  "RANDOMFOREST",
+  "Test",
+  108.05,
+  8.14,
+  5.74,
+  7.77,
+  180.18,
+  0.81
+)
+
+knitr::kable(d, results='asis')
+
+#DT::datatable(
+#  head(d),
+#  options = list(dom = 't'), rownames = FALSE
+#)
+```
 
 
 *Шаг 6.* Заключительный этап состоит в том, чтобы скорректировать модели, распространить их на полный набор данных и спрогнозировать будущие значения. 
@@ -422,7 +525,7 @@ refit_tbl <- calibration_tbl %>%
   modeltime_refit(data = fire_time_series_tbl)
 ```
 
-Визуаизируем прогноз.
+Визуализируем прогноз.
 
 ```r
 refit_tbl %>%
