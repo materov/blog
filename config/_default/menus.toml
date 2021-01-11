@@ -33,10 +33,10 @@
   url = "#featured"
   weight = 50
 
-[[main]]
-  name = "Курсы"
-  url = "courses/"
-  weight = 60
+#[[main]]
+#  name = "Курсы"
+#  url = "courses/"
+#  weight = 60
 
 [[main]]
   name = "Контактные данные"
