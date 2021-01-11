@@ -15,7 +15,7 @@ image:
   focal_point: ""
   preview_only: false
 projects: []
-publication: '*Discrete & Computational Geometry, 48*(2020)'
+publication: '*Discrete & Computational Geometry, 48* (2020)'
 publication_short: ""
 publication_types:
 - "2"
