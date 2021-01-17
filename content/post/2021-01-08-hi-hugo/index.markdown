@@ -9,7 +9,7 @@ subtitle: 'прогнозирование временных рядов с по�
 summary: 'Мы покажем некоторые примеры использования машинного обучения для моделирования и прогнозирования временных рядов на примере  библиотеки `modeltime`.'
 authors: 
 - admin
-lastmod: '2021-01-09'
+lastmod: '2021-01-17'
 featured: yes
 math: true
 image:
@@ -65,7 +65,7 @@ library(timetk)
 
 
 ```r
-url <- "https://raw.githubusercontent.com/materov/hydro_data/main/df_hydro.csv"
+url <- "https://raw.githubusercontent.com/materov/blog_data/main/df_hydro.csv"
 
 df_hydro <- readr::read_csv(url)
 ```

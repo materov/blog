@@ -58,7 +58,7 @@
   translation: PDF
 
 - id: btn_cite
-  translation: Процитировать
+  translation: Процитировать (BibTeX)
 
 - id: btn_slides
   translation: Презентации
