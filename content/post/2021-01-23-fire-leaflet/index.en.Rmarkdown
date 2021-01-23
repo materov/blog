@@ -252,10 +252,10 @@ leaflet() %>%
 ```{r, warning=FALSE, echo=FALSE, message=FALSE}
 library(htmltools)
 
-fire %<>% na.omit()
+fire_0 <- fire %>% na.omit()
 
-getColor <- function(fire) {
-  sapply(fire$PRIB_TIME, function(PRIB_TIME) {
+getColor <- function(fire_0) {
+  sapply(fire_0$PRIB_TIME, function(PRIB_TIME) {
     if(PRIB_TIME <= 10) {
       "green"
     } else {
@@ -268,13 +268,13 @@ icons <- awesomeIcons(
   icon = 'ios-flame',
   iconColor = 'black',
   library = 'ion',
-  markerColor = getColor(fire)
+  markerColor = getColor(fire_0)
 )
 
 AddAwesomeMarkers <- leaflet() %>%
   setView(lng = 82.86, lat = 55, zoom = 14) %>% 
   addTiles() %>% 
-  addAwesomeMarkers(data = fire %>% 
+  addAwesomeMarkers(data = fire_0 %>% 
                     filter(OBJECT_CATEGORIE == "Транспортные средства"),
                     lng = ~geo_lon, lat = ~geo_lat,  
                     label = ~htmlEscape(ADDRES),
