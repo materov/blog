@@ -67,7 +67,7 @@ leaflet() %>%
   addTiles() %>% 
   addCircleMarkers(data = fire, 
                    lng = ~geo_lon, lat = ~geo_lat, 
-    radius = 5*log10(fire$SQUARE_LOC),
+    radius = 6*log10(fire$SQUARE_LOC),
     stroke = FALSE, fillOpacity = 0.4
   )
 
