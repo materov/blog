@@ -1,0 +1,436 @@
+---
+title: Интерактивные карты на Leaflet
+author: admin
+date: '2021-01-23'
+slug: fire-leaflet
+categories: ["R"]
+tags: ["rstats", "геоданные"]
+subtitle: 'построение интерактивных географических HTML-карт'
+summary: 'В статье будет показано, как используя библиотеку `Leaflet` можно создавать HTML-виджеты для интерактивного просмотра пространственных данных.'
+authors: 
+- admin
+lastmod: '2021-01-23T19:28:41+07:00'
+featured: yes
+math: true
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: yes
+projects: []
+---
+
+
+[Leaflet](https://leafletjs.com/) является одной из самых популярных open-source библиотек на JavaScript для создания интерактивных карт. Соответствующая библиотека [Leaflet for R](https://rstudio.github.io/leaflet/) позволяет легко интегрировать интерактивные карты Leaflet как HTML-виджеты. В продолжение [предыдущей записи](https://materov-blog.netlify.app/post/geodata-fire/) в блоге по работе с геоданными в {{< icon name="r-project" pack="fab" >}}, покажем, как можно быстро разработать интерактивную карту пожаров, не прибегая при этом к средствам JavaScript. 
+
+Пример Leaflet карты, иллюстрирующей пожары в Новосибирске за период с начала 2016 года по середину июля 2020 года, показан ниже. Для удобства отображения большого количества маркеров, отмечающих пожары, смежные маркеры автоматически группируются в кластеры.
+
+```{r sample, warning=FALSE, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(magrittr)
+library(RCurl)
+library(leaflet)
+
+library(htmlwidgets)
+library(htmltools)
+
+url <- getURL("https://raw.githubusercontent.com/materov/blog_data/main/fire_NSK.csv")
+fire <- read.csv(text = url)
+
+fire %<>% na.omit()
+fire %<>% as_tibble()
+
+
+fire_geo <-
+  fire %>% 
+  select(geo_lat, geo_lon) %>% 
+  purrr::set_names("lat", "long") 
+
+
+BasicMap <- leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  addTiles() %>% 
+  addMarkers(
+  clusterOptions = markerClusterOptions()
+) 
+
+saveWidget(BasicMap, "BasicMap.html")
+
+```
+
+<iframe seamless src="BasicMap.html" width="100%" height="600"></iframe>
+
+# Исходные данные
+
+Поключим небходимые библиотеки в {{< icon name="r-project" pack="fab" >}}.
+
+```{r setup, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(magrittr)
+library(RCurl)
+
+library(leaflet)
+```
+
+Загрузим **данные по пожарам в Новосибирске**[^thanks] за последние несколько лет. 
+
+[^thanks]: Автор выражает благодарность [О.С. Малютину](https://www.sibpsa.ru/ntc/management/?ELEMENT_ID=748) за предоставленные данные.
+
+```{r, warning=FALSE, message=FALSE}
+url <- getURL("https://raw.githubusercontent.com/materov/blog_data/main/fire_NSK.csv")
+fire <- read.csv(text = url)
+fire %<>% as_tibble()
+
+fire
+```
+
+Основные интересующие нас переменные, --- это широта и долгота: `geo_lat` и `geo_lon`.
+
+```{r, warning=FALSE, message=FALSE}
+fire_geo <-
+fire %>% 
+  select(geo_lat, geo_lon) %>% 
+  purrr::set_names("lat", "long") 
+
+fire_geo
+```
+
+# Построение базовой карты
+
+Для построения базовой интерактивной карты в первую очередь необходимо выбрать координаты центра карты и базовое увеличение командой `setView()`.
+
+```r
+leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  addTiles()
+```
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+ZeroMap <- leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  addTiles() 
+
+saveWidget(ZeroMap, "ZeroMap.html")
+
+```
+
+<iframe seamless src="ZeroMap.html" width="100%" height="600"></iframe>
+
+# Нанесение данных на карту
+
+## Маркеры
+
+Точки отвечающие пожарам можно нанести на карту командой `addMarkers()`. В качестве примера рассмотрим только категорию объектов пожара *Садовый дом, дача*.
+
+```r
+fire %>% 
+  filter(OBJECT_CATEGORIE == "Садовый дом, дача") %>% 
+  select(geo_lat, geo_lon) %>% 
+  purrr::set_names("lat", "long") %>% 
+  leaflet() %>%
+  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  addTiles() %>% 
+  addMarkers()
+```
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+AddMarkersMap <- fire %>% 
+  filter(OBJECT_CATEGORIE == "Садовый дом, дача") %>% 
+  select(geo_lat, geo_lon) %>% 
+  purrr::set_names("lat", "long") %>% 
+  leaflet() %>%
+  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  addTiles() %>% 
+  addMarkers()
+
+saveWidget(AddMarkersMap, "AddMarkersMap.html")
+```
+
+<iframe seamless src="AddMarkersMap.html" width="100%" height="600"></iframe>
+
+## Кластеры
+
+Для большого количества данных маркеры могут сливаться, поэтому сгруппируем их используя опцию `clusterOptions`.
+
+```r
+leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  addTiles() %>% 
+  addMarkers(
+  clusterOptions = markerClusterOptions()
+)
+```
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+AddClustersMap <- leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  addTiles() %>% 
+  addMarkers(
+  clusterOptions = markerClusterOptions()
+)
+
+saveWidget(AddClustersMap, "AddClustersMap.html")
+```
+
+<iframe seamless src="AddClustersMap.html" width="100%" height="600"></iframe>
+
+По сути, наша карта готова. Тем не менее, ее можно улучшить рассмотрев дополнительные возможности предоставляемые Leaflet.
+
+## Различные слои
+
+OpenStreetMap позволяет добавлять на карту различные слои. В нашем случае актуальным является слой OpenFireMap, который наносит на карту пожарные части, гидранты и пожарные водоемы.
+
+```r
+leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  addTiles() %>% 
+  addMarkers(
+  clusterOptions = markerClusterOptions()
+) %>% addProviderTiles(providers$OpenFireMap) 
+```
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+AddFireMap <- leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  addTiles() %>% 
+  addMarkers(
+  clusterOptions = markerClusterOptions()
+) %>% addProviderTiles(providers$OpenFireMap) 
+
+saveWidget(AddFireMap, "AddFireMap.html")
+```
+
+<iframe seamless src="AddFireMap.html" width="100%" height="600"></iframe>
+
+Полный список подключаемых карт содержится в переменной `providers`, соотнести слои с их названиями можно используя соответствующую [веб-страницу](http://leaflet-extras.github.io/leaflet-providers/preview/index.html).
+
+```{r, warning=FALSE, message=FALSE}
+head(leaflet::providers, 5)
+```
+
+## Вид и форма маркеров
+
+Маркеры могут быть двух видов: в виде *иконок* и *кругов*. 
+Подробно о виде и форме маркеров можно прочесть на [сайте библиотеки Leaflet](https://rstudio.github.io/leaflet/markers.html). В качестве примера сделаем так, чтобы при наведении на маркер всплывал адрес пожара, рассмотрев только пожары на транспортных средствах. Разделим по цвету маркеры, соответствующие пожарам на две категории:
+
+- обозначим зеленым цветом маркеры, где время прибытия пожарно-спасательных подразделений составило не более 10 минут;
+- красные маркеры соответствуют времени прибытия более 10 минут.
+
+
+```r
+# цвет маркеров
+getColor <- function(fire) {
+  sapply(fire$PRIB_TIME, function(PRIB_TIME) {
+    if(PRIB_TIME <= 10) {
+      "green"
+    } else {
+      "red"
+    } })
+}
+
+# вид маркеров
+icons <- awesomeIcons(
+  icon      = 'ios-flame',
+  iconColor = 'black',
+  library   = 'ion',
+  markerColor = getColor(fire)
+)
+
+
+library(htmltools)
+
+leaflet() %>%
+  setView(lng = 82.86, lat = 55, zoom = 14) %>% 
+  addTiles() %>% 
+  addAwesomeMarkers(data = fire %>% 
+                    filter(OBJECT_CATEGORIE == "Транспортные средства"),
+                    lng = ~geo_lon, lat = ~geo_lat,  
+                    label = ~htmlEscape(ADDRES),
+                    icon = icons
+  )
+```
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+library(htmltools)
+
+url <- getURL("https://raw.githubusercontent.com/materov/blog_data/main/fire_NSK.csv")
+fire <- read.csv(text = url)
+
+fire %<>% na.omit()
+fire %<>% as_tibble()
+fire %<>% na.omit()
+
+getColor <- function(fire) {
+  sapply(fire$PRIB_TIME, function(PRIB_TIME) {
+    if(PRIB_TIME <= 10) {
+      "green"
+    } else {
+      "red"
+    } })
+}
+
+
+icons <- awesomeIcons(
+  icon = 'ios-flame',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = getColor(fire)
+)
+
+AddAwesomeMarkers <- leaflet() %>%
+  setView(lng = 82.86, lat = 55, zoom = 14) %>% 
+  addTiles() %>% 
+  addAwesomeMarkers(data = fire %>% 
+                    filter(OBJECT_CATEGORIE == "Транспортные средства"),
+                    lng = ~geo_lon, lat = ~geo_lat,  
+                    label = ~htmlEscape(ADDRES),
+                    icon = icons
+  )
+
+saveWidget(AddAwesomeMarkers, "AddAwesomeMarkers.html")
+```
+
+<iframe seamless src="AddAwesomeMarkers.html" width="100%" height="600"></iframe>
+
+Как говорилось ранее, маркеры можно представлять и в виде кругов. 
+Применим эту возможность для отображения площади пожаров, подобрав при этом радиус окружности маркера так, чтобы он в некотором масштабе соответствовал площади возгорания.
+
+```r
+leaflet() %>%
+  setView(lng = 82.87, lat = 55, zoom = 12.5) %>% 
+  addTiles() %>% 
+  addCircleMarkers(data = fire, 
+                   lng = ~geo_lon, lat = ~geo_lat, 
+    radius = 5*log10(fire$SQUARE_LOC),
+    stroke = FALSE, fillOpacity = 0.4
+  )
+```
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+SquareMarkers <-
+  leaflet() %>%
+  setView(lng = 82.87, lat = 55, zoom = 12.5) %>% 
+  addTiles() %>% 
+  addCircleMarkers(data = fire, 
+                   lng = ~geo_lon, lat = ~geo_lat, 
+    radius = 5*log10(fire$SQUARE_LOC),
+    stroke = FALSE, fillOpacity = 0.4
+  )
+saveWidget(SquareMarkers, "SquareMarkers.html")
+```
+
+<iframe seamless src="SquareMarkers.html" width="100%" height="600"></iframe>
+
+## Интерактиваная легенда
+
+Теперь попробуем соеденить некоторые возможности, которые мы рассмотрели и создадим карту, на котрой мы могди бы выбирать темы подложки и основные типы интересующих нас объектов горения.
+
+{{< spoiler text="**Код визуализирующий карту ниже.**" >}}
+
+```r
+leaflet() %>%
+  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  addTiles(options = providerTileOptions(noWrap = TRUE), 
+           group = "Базовая тема (OpenStreetMap)") %>%
+  addProviderTiles("OpenFireMap", 
+           group = "Пожарно-спасательные подразделения (OpenFireMap)") %>% 
+  addProviderTiles("CartoDB.DarkMatter", 
+           group = "Темная тема (CartoDB)") %>%
+  addProviderTiles("Esri.WorldImagery", 
+           group = "Спутник") %>%  
+  addTiles() %>% 
+  addAwesomeMarkers(data = fire %>% 
+                      filter(OBJECT_CATEGORIE %in% c("Одноквартирный жилой дом", 
+                                                     "Многоквартирный жилой дом")), 
+             lng = ~geo_lon, lat = ~geo_lat, 
+             group = "Жилые дома",  
+             label = ~htmlEscape(ADDRES),
+    clusterOptions = markerClusterOptions()
+  )  %>% 
+  addAwesomeMarkers(data = fire %>% 
+                      filter(OBJECT_CATEGORIE %in% c("Транспортные средства")), 
+             lng = ~geo_lon, lat = ~geo_lat, 
+             group = "Транспортные средства",
+             label = ~htmlEscape(ADDRES),
+             clusterOptions = markerClusterOptions()
+  )  %>% 
+  addAwesomeMarkers(data = fire %>% 
+                      filter(OBJECT_CATEGORIE %in% c("Надворные постройки")), 
+             lng = ~geo_lon, lat = ~geo_lat, 
+             group = "Надворные постройки", 
+             label = ~htmlEscape(ADDRES),
+             clusterOptions = markerClusterOptions()
+  )  %>% 
+  addLayersControl(overlayGroups = c("Жилые дома", 
+                                     "Транспортные средства", 
+                                     "Надворные постройки"),
+    baseGroups = c("Базовая тема (OpenStreetMap)",
+                                  "Пожарно-спасательные подразделения (OpenFireMap)", 
+                                  "Темная тема (CartoDB)",
+                                  "Спутник"), 
+    position = c("bottomleft"),
+                   options = layersControlOptions(collapsed = FALSE)) %>% 
+  hideGroup("Транспортные средства") %>% 
+  hideGroup("Надворные постройки")
+```
+
+{{< /spoiler >}}
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+AddLegend <-
+  leaflet() %>%
+  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  addTiles(options = providerTileOptions(noWrap = TRUE), 
+           group = "Базовая тема (OpenStreetMap)") %>%
+  addProviderTiles("OpenFireMap", 
+           group = "Пожарно-спасательные подразделения (OpenFireMap)") %>% 
+  addProviderTiles("CartoDB.DarkMatter", 
+           group = "Темная тема (CartoDB)") %>%
+  addProviderTiles("Esri.WorldImagery", 
+           group = "Спутник") %>%  
+  addTiles() %>% 
+  addAwesomeMarkers(data = fire %>% 
+                      filter(OBJECT_CATEGORIE %in% c("Одноквартирный жилой дом", 
+                                                     "Многоквартирный жилой дом")), 
+             lng = ~geo_lon, lat = ~geo_lat, 
+             group = "Жилые дома",  
+             label = ~htmlEscape(ADDRES),
+    clusterOptions = markerClusterOptions()
+  )  %>% 
+  addAwesomeMarkers(data = fire %>% 
+                      filter(OBJECT_CATEGORIE %in% c("Транспортные средства")), 
+             lng = ~geo_lon, lat = ~geo_lat, 
+             group = "Транспортные средства",
+             label = ~htmlEscape(ADDRES),
+             clusterOptions = markerClusterOptions()
+  )  %>% 
+  addAwesomeMarkers(data = fire %>% 
+                      filter(OBJECT_CATEGORIE %in% c("Надворные постройки")), 
+             lng = ~geo_lon, lat = ~geo_lat, 
+             group = "Надворные постройки", 
+             label = ~htmlEscape(ADDRES),
+             clusterOptions = markerClusterOptions()
+  )  %>% 
+  addLayersControl(overlayGroups = c("Жилые дома", 
+                                     "Транспортные средства", 
+                                     "Надворные постройки"),
+    baseGroups = c("Базовая тема (OpenStreetMap)",
+                                  "Пожарно-спасательные подразделения (OpenFireMap)", 
+                                  "Темная тема (CartoDB)",
+                                  "Спутник"), 
+    position = c("bottomleft"),
+                   options = layersControlOptions(collapsed = FALSE)) %>% 
+  hideGroup("Транспортные средства") %>% 
+  hideGroup("Надворные постройки")
+saveWidget(AddLegend, "AddLegend.html")
+```
+
+<iframe seamless src="AddLegend.html" width="100%" height="600"></iframe>
+
+
+
+
+
+
+
+
+
