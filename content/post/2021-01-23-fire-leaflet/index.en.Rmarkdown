@@ -252,11 +252,6 @@ leaflet() %>%
 ```{r, warning=FALSE, echo=FALSE, message=FALSE}
 library(htmltools)
 
-url <- getURL("https://raw.githubusercontent.com/materov/blog_data/main/fire_NSK.csv")
-fire <- read.csv(text = url)
-
-fire %<>% na.omit()
-fire %<>% as_tibble()
 fire %<>% na.omit()
 
 getColor <- function(fire) {
