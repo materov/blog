@@ -113,8 +113,143 @@ leaflet(fire) %>%
   hideGroup("Надворные постройки")
 
 
+library(crosstalk)
 
-shared_fire <- SharedData$new(fire)
+# подготовка данных
+fire_dated <- fire_0
+fire_dated$DATE_ZVK %<>% as.Date()
+
+fire_filtered <- fire_dated %>% 
+  filter(OBJECT_CATEGORIE %in% c("Одноквартирный жилой дом",
+                                 "Многоквартирный жилой дом")) %>% 
+  filter(DATE_ZVK >= "2020-01-01") %>% 
+  rename(lat = "geo_lat", long = "geo_lon")
+
+shared_fire <- SharedData$new(fire_filtered)
+
+# отрисовка карты
+bscols(widths = c(2,NA, NA),
+       list(
+         filter_checkbox("OBJECT_CATEGORIE", "Объект горения", shared_fire, ~OBJECT_CATEGORIE, inline = F),
+         filter_slider("PRIB_TIME", "Время прибытия", shared_fire, column = ~PRIB_TIME, step = 1, width = "100%") 
+       ),
+  leaflet(shared_fire, width = "100%", height = 600) %>% 
+    setView(lng = 82.9, lat = 55, zoom = 11) %>%
+    addTiles() %>% 
+    addMarkers()
+)
+
+
+#--
+
+CrosstalkMap <-
+  # отрисовка карты
+  bscols(widths = c(2,NA, NA),
+         list(
+           filter_checkbox("OBJECT_CATEGORIE", "Объект горения", 
+                           shared_fire, ~OBJECT_CATEGORIE, inline = F),
+           filter_slider("PRIB_TIME", "Время прибытия", 
+                         shared_fire, column = ~PRIB_TIME, step = 1, width = "100%") 
+         ),
+         leaflet(shared_fire, width = "100%", height = 600) %>% 
+           setView(lng = 82.9, lat = 55, zoom = 11) %>%
+           addTiles() %>% 
+           addMarkers()
+  )
+htmltools::save_html(CrosstalkMap, "CrosstalkMap.html")
+saveWidget(CrosstalkMap, "CrosstalkMap.html")
+
+###
+
+bscols(widths = c(2,NA),
+       list(
+         filter_checkbox("OBJECT_CATEGORIE", "Категория", shared_fire, ~OBJECT_CATEGORIE, inline = F)
+       ),
+  leaflet(data = shared_fire, 
+          width = "100%", height = 600) %>%
+    setView(lng = 82.9, lat = 55, zoom = 11) %>%
+    addTiles() %>% addMarkers(lng = ~long, lat = ~lat,
+      clusterOptions = markerClusterOptions())
+  )
+
+
+####
+
+library(crosstalk)
+library(leaflet)
+library(DT)
+
+# Wrap data frame in SharedData
+sd <- SharedData$new(quakes[sample(nrow(quakes), 100),])
+
+# Create a filter input
+
+
+# Use SharedData like a dataframe with Crosstalk-enabled widgets
+bscols(filter_slider("mag", "Magnitude", sd, column=~mag, step=0.1, width=250),
+  leaflet(sd) %>% addTiles() %>% addMarkers(),
+  datatable(sd, extensions="Scroller", style="bootstrap", class="compact", width="100%",
+            options=list(deferRender=TRUE, scrollY=300, scroller=TRUE))
+)
+
+shared_quakes <- SharedData$new(quakes[sample(nrow(quakes), 100),])
+bscols(
+  leaflet(shared_quakes, width = "100%", height = 300) %>%
+    addTiles() %>%
+    addMarkers(),
+  d3scatter(shared_quakes, ~depth, ~mag, width = "100%", height = 300)
+)
+
+
+library(plotly)
+# devtools::install_github("rstudio/leaflet#346")
+library(leaflet)
+library(crosstalk)
+library(htmltools)
+
+# leaflet should respect these "global" highlight() options
+options(opacityDim = 0.5)
+
+sd <- highlight_key(quakes)
+
+p <- plot_ly(sd, x = ~depth, y = ~mag) %>% 
+  add_markers(alpha = 0.5) %>%
+  highlight("plotly_selected", dynamic = TRUE)
+
+map <- leaflet(sd) %>% 
+  addTiles() %>% 
+  addCircles()
+
+bscols(p, map)
+
+###
+
+
+leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  addTiles() %>% 
+  addMarkers(
+    clusterOptions = markerClusterOptions()
+  )
+
+
+
+
+bscols(
+  leaflet(shared_fire) %>% addTiles() %>% addMarkers(),
+  DT::datatable(shared_fire, extensions="Scroller", style="bootstrap", class="compact", width="100%",
+            options=list(deferRender=TRUE, scrollY=300, scroller=TRUE))
+)
+
+
+leaflet(fire_geo) %>%
+  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  addTiles() %>% 
+  addMarkers(
+    clusterOptions = markerClusterOptions()
+  )
+
+
 
 bscols(widths = c(2,NA),
        list(
