@@ -475,7 +475,7 @@ CrosstalkMap <-
 # отрисовка карты
 bscols(widths = c(3,NA),
        list(
-         filter_checkbox("OBJECT_CATEGORIE", "Объект горения", 
+         filter_checkbox("OBJECT_CATEGORIE", "Категория объекта", 
                          shared_fire, ~OBJECT_CATEGORIE, inline = F),
          filter_slider("PRIB_TIME", "Время прибытия", 
                        shared_fire, column = ~PRIB_TIME, step = 1, width = "100%") 
