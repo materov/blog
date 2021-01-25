@@ -169,7 +169,11 @@ leaflet() %>%
 ) 
 ```
 
-<iframe seamless src="AddFireMap.html" width="100%" height="600"></iframe>
+
+
+<iframe seamless src="l_leaflet.html" width="100%" height="600"></iframe>
+
+
 
 Например, актуальным является слой OpenFireMap, который наносит на карту пожарные части, гидранты и пожарные водоемы.
 Полный список подключаемых карт содержится в переменной `providers`. 
