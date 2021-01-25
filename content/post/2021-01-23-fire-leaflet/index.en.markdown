@@ -162,11 +162,10 @@ leaflet(fire_geo) %>%
 OpenStreetMap позволяет добавлять на карту различные слои. 
 
 ```r
-leaflet(fire_geo) %>%
+leaflet() %>% 
   setView(lng = 82.9, lat = 55, zoom = 11) %>% 
-  addProviderTiles(providers$OpenFireMap) %>% 
-  addMarkers(
-  clusterOptions = markerClusterOptions()
+  addTiles() %>% 
+  addProviderTiles(providers$OpenFireMap)
 ) 
 ```
 
