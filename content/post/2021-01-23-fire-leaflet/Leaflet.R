@@ -12,8 +12,8 @@ fire$DATE_ZVK %<>% as.Date()
 
 fire_geo <-
 fire %>% 
-  filter(OBJECT_CATEGORIE %in% c("Многоквартирный жилой дом",
-                                 "Одноквартирный жилой дом")) %>% 
+#  filter(OBJECT_CATEGORIE %in% c("Многоквартирный жилой дом",
+#                                 "Одноквартирный жилой дом")) %>% 
 #  filter(DATE_ZVK > "2019-01-01") %>% 
   select(geo_lat, geo_lon) %>% 
   purrr::set_names("lat", "long") 
@@ -24,7 +24,7 @@ leaflet(fire_geo) %>%
   addTiles() %>% 
   addMarkers(
   clusterOptions = markerClusterOptions()
-) %>% addProviderTiles(providers$OpenFireMap) 
+) %>% addProviderTiles(providers$Ersi) 
 # Wikimedia - светлая тема
 # CartoDB - светлая тема
 # CartoDB.DarkMatter - темная тема

@@ -159,7 +159,7 @@ leaflet(fire_geo) %>%
 
 ## Слои карт
 
-OpenStreetMap позволяет добавлять на карту различные слои. В нашем случае актуальным является слой OpenFireMap, который наносит на карту пожарные части, гидранты и пожарные водоемы.
+OpenStreetMap позволяет добавлять на карту различные слои. 
 
 ```r
 leaflet(fire_geo) %>%
@@ -167,13 +167,14 @@ leaflet(fire_geo) %>%
   addTiles() %>% 
   addMarkers(
   clusterOptions = markerClusterOptions()
-) %>% addProviderTiles(providers$OpenFireMap) 
+) %>% addProviderTiles(providers$Wikimedia) 
 ```
 
 
 
 <iframe seamless src="AddFireMap.html" width="100%" height="450"></iframe>
 
+Например, актуальным является слой OpenFireMap, который наносит на карту пожарные части, гидранты и пожарные водоемы.
 Полный список подключаемых карт содержится в переменной `providers`. 
 
 
