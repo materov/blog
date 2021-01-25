@@ -121,7 +121,7 @@ leaflet(fire_geo) %>%
 
 ## Маркеры
 
-Точки на карте, отвечающие пожарам, можно нанести командой `addMarkers()`. В качестве примера рассмотрим только категорию объектов пожара *Садовый дом, дача*.
+Точки на карте, отвечающие пожарам, можно добавить командой `addMarkers()`. В качестве примера рассмотрим только категорию объектов пожара *Садовый дом, дача*.
 
 ```r
 fire %>% 
@@ -172,9 +172,9 @@ leaflet(fire_geo) %>%
 
 
 
-<iframe seamless src="AddFireMap.html" width="100%" height="600"></iframe>
+<iframe seamless src="AddFireMap.html" width="100%" height="450"></iframe>
 
-Полный список подключаемых карт содержится в переменной `providers`, соотнести слои с их названиями можно используя соответствующую [веб-страницу](http://leaflet-extras.github.io/leaflet-providers/preview/index.html).
+Полный список подключаемых карт содержится в переменной `providers`. 
 
 
 ```r
@@ -197,6 +197,8 @@ head(leaflet::providers, 5)
 ## $OpenStreetMap.France
 ## [1] "OpenStreetMap.France"
 ```
+
+Соотнести слои с их названиями можно используя соответствующую [веб-страницу](http://leaflet-extras.github.io/leaflet-providers/preview/index.html).
 
 ## Вид и форма маркеров
 
@@ -276,8 +278,6 @@ leaflet() %>%
   setView(lng = 82.9, lat = 55, zoom = 11) %>% 
   addTiles(options = providerTileOptions(noWrap = TRUE), 
            group = "Базовая тема (OpenStreetMap)") %>%
-  addProviderTiles("OpenFireMap", 
-           group = "Пожарно-спасательные подразделения (OpenFireMap)") %>% 
   addProviderTiles("CartoDB.DarkMatter", 
            group = "Темная тема (CartoDB)") %>%
   addProviderTiles("Esri.WorldImagery", 
@@ -308,8 +308,7 @@ leaflet() %>%
   addLayersControl(overlayGroups = c("Жилые дома", 
                                      "Транспортные средства", 
                                      "Надворные постройки"),
-    baseGroups = c("Базовая тема (OpenStreetMap)",
-                                  "Пожарно-спасательные подразделения (OpenFireMap)", 
+    baseGroups = c("Базовая тема (OpenStreetMap)", 
                                   "Темная тема (CartoDB)",
                                   "Спутник"), 
     position = c("bottomleft"),

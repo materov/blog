@@ -121,7 +121,7 @@ saveWidget(ZeroMap, "ZeroMap.html")
 
 ## Маркеры
 
-Точки на карте, отвечающие пожарам, можно нанести командой `addMarkers()`. В качестве примера рассмотрим только категорию объектов пожара *Садовый дом, дача*.
+Точки на карте, отвечающие пожарам, можно добавить командой `addMarkers()`. В качестве примера рассмотрим только категорию объектов пожара *Садовый дом, дача*.
 
 ```r
 fire %>% 
@@ -198,16 +198,19 @@ AddFireMap <- leaflet(fire_geo) %>%
   clusterOptions = markerClusterOptions()
 ) %>% addProviderTiles(providers$OpenFireMap) 
 
-saveWidget(AddFireMap, "AddFireMap.html")
+htmltools::save_html(AddFireMap, "AddFireMap.html")
+#saveWidget(AddFireMap, "AddFireMap.html")
 ```
 
-<iframe seamless src="AddFireMap.html" width="100%" height="600"></iframe>
+<iframe seamless src="AddFireMap.html" width="100%" height="450"></iframe>
 
-Полный список подключаемых карт содержится в переменной `providers`, соотнести слои с их названиями можно используя соответствующую [веб-страницу](http://leaflet-extras.github.io/leaflet-providers/preview/index.html).
+Полный список подключаемых карт содержится в переменной `providers`. 
 
 ```{r, warning=FALSE, message=FALSE}
 head(leaflet::providers, 5)
 ```
+
+Соотнести слои с их названиями можно используя соответствующую [веб-страницу](http://leaflet-extras.github.io/leaflet-providers/preview/index.html).
 
 ## Вид и форма маркеров
 
@@ -331,8 +334,6 @@ leaflet() %>%
   setView(lng = 82.9, lat = 55, zoom = 11) %>% 
   addTiles(options = providerTileOptions(noWrap = TRUE), 
            group = "Базовая тема (OpenStreetMap)") %>%
-  addProviderTiles("OpenFireMap", 
-           group = "Пожарно-спасательные подразделения (OpenFireMap)") %>% 
   addProviderTiles("CartoDB.DarkMatter", 
            group = "Темная тема (CartoDB)") %>%
   addProviderTiles("Esri.WorldImagery", 
@@ -363,8 +364,7 @@ leaflet() %>%
   addLayersControl(overlayGroups = c("Жилые дома", 
                                      "Транспортные средства", 
                                      "Надворные постройки"),
-    baseGroups = c("Базовая тема (OpenStreetMap)",
-                                  "Пожарно-спасательные подразделения (OpenFireMap)", 
+    baseGroups = c("Базовая тема (OpenStreetMap)", 
                                   "Темная тема (CartoDB)",
                                   "Спутник"), 
     position = c("bottomleft"),
@@ -381,8 +381,6 @@ AddLegend <-
   setView(lng = 82.9, lat = 55, zoom = 11) %>% 
   addTiles(options = providerTileOptions(noWrap = TRUE), 
            group = "Базовая тема (OpenStreetMap)") %>%
-  addProviderTiles("OpenFireMap", 
-           group = "Пожарно-спасательные подразделения (OpenFireMap)") %>% 
   addProviderTiles("CartoDB.DarkMatter", 
            group = "Темная тема (CartoDB)") %>%
   addProviderTiles("Esri.WorldImagery", 
@@ -414,7 +412,6 @@ AddLegend <-
                                      "Транспортные средства", 
                                      "Надворные постройки"),
     baseGroups = c("Базовая тема (OpenStreetMap)",
-                                  "Пожарно-спасательные подразделения (OpenFireMap)", 
                                   "Темная тема (CartoDB)",
                                   "Спутник"), 
     position = c("bottomleft"),
