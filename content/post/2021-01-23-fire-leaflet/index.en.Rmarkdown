@@ -189,17 +189,7 @@ leaflet() %>%
 ) 
 ```
 
-```{r, warning=FALSE, echo=FALSE, message=FALSE}
-AddFireMap <- leaflet() %>% 
-  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
-  addTiles(options = providerTileOptions(noWrap = TRUE)) %>% 
-  addProviderTiles(providers$OpenFireMap)
-
-htmltools::save_html(AddFireMap, "AddFireMap.html")
-#saveWidget(AddFireMap, "AddFireMap.html")
-```
-
-<iframe seamless src="AddFireMap.html" width="100%" height="450"></iframe>
+<iframe seamless src="AddFireMap.html" width="100%" height="600"></iframe>
 
 Например, актуальным является слой OpenFireMap, который наносит на карту пожарные части, гидранты и пожарные водоемы.
 Полный список подключаемых карт содержится в переменной `providers`. 

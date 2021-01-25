@@ -32,10 +32,12 @@ leaflet(fire_geo) %>%
 # Esri - подробно дороги
 # Stamen.TonerLines - дороги темным цветом
 
-leaflet() %>% 
+AddFireMap <- leaflet() %>% 
   setView(lng = 82.9, lat = 55, zoom = 11) %>% 
-  addTiles() %>% 
+  addTiles(options = providerTileOptions(noWrap = TRUE)) %>% 
   addProviderTiles(providers$OpenFireMap)
+
+htmlwidgets::saveWidget(AddFireMap, "AddFireMap.html")
 
 getColor <- function(fire) {
   sapply(fire$PRIB_TIME, function(PRIB_TIME) {
