@@ -185,18 +185,20 @@ OpenStreetMap позволяет добавлять на карту различ
 leaflet(fire_geo) %>%
   setView(lng = 82.9, lat = 55, zoom = 11) %>% 
   addTiles() %>% 
+  addProviderTiles(providers$Wikimedia) %>% 
   addMarkers(
   clusterOptions = markerClusterOptions()
-) %>% addProviderTiles(providers$Wikimedia) 
+) 
 ```
 
 ```{r, warning=FALSE, echo=FALSE, message=FALSE}
 AddFireMap <- leaflet(fire_geo) %>%
   setView(lng = 82.9, lat = 55, zoom = 11) %>% 
   addTiles() %>% 
+  addProviderTiles(providers$Wikimedia) %>% 
   addMarkers(
   clusterOptions = markerClusterOptions()
-) %>% addProviderTiles(providers$Wikimedia) 
+) 
 
 htmltools::save_html(AddFireMap, "AddFireMap.html")
 #saveWidget(AddFireMap, "AddFireMap.html")
