@@ -336,15 +336,11 @@ leaflet() %>%
 
 Подготовим данные и сделаем карту в `crosstalk`.
 
-
 ```r
 library(crosstalk)
 
 # подготовка данных
-fire_dated <- fire_0
-fire_dated$DATE_ZVK %<>% as.Date()
-
-fire_filtered <- fire_dated %>% 
+fire_filtered <- fire %>% 
   filter(OBJECT_CATEGORIE %in% c("Одноквартирный жилой дом",
                                  "Многоквартирный жилой дом")) %>% 
   filter(DATE_ZVK >= "2020-01-01") %>% 
@@ -352,6 +348,8 @@ fire_filtered <- fire_dated %>%
 
 shared_fire <- SharedData$new(fire_filtered)
 ```
+
+
 
 ```r
 # отрисовка карты

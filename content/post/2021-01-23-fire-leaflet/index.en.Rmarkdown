@@ -426,7 +426,20 @@ saveWidget(AddLegend, "AddLegend.html")
 
 Подготовим данные и сделаем карту в `crosstalk`.
 
-```{r, warning=FALSE, message=FALSE}
+```r
+library(crosstalk)
+
+# подготовка данных
+fire_filtered <- fire %>% 
+  filter(OBJECT_CATEGORIE %in% c("Одноквартирный жилой дом",
+                                 "Многоквартирный жилой дом")) %>% 
+  filter(DATE_ZVK >= "2020-01-01") %>% 
+  rename(lat = "geo_lat", long = "geo_lon")
+
+shared_fire <- SharedData$new(fire_filtered)
+```
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
 library(crosstalk)
 
 # подготовка данных
