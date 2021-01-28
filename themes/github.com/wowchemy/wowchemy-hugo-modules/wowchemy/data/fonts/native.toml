@@ -8,7 +8,7 @@ name = "Native"
 google_fonts = ""
 
 # Font families
-heading_font = "Lora"
+heading_font = ""
 body_font = ""
 nav_font = ""
 mono_font = ""
