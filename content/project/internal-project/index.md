@@ -7,7 +7,7 @@ image:
 summary: 
 tags:
 - IT
-title: Математически методы и информационные технологии в научных исследованиях
+title: Математические методы и информационные технологии в научных исследованиях
 url_code: "https://github.com/materov/RStudy"
 url_pdf: ""
 url_slides: ""
