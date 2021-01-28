@@ -10,7 +10,7 @@ headless: true
 weight: 130
 
 title: Контактные данные
-subtitle: ФБГОУ ВО Сибирская пожарно-спасательная академия ГПС МЧС России
+subtitle: ФГБОУ ВО Сибирская пожарно-спасательная академия ГПС МЧС России
 
 content:
   # Automatically link email and phone or display as text?
