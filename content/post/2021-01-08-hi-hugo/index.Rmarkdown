@@ -44,7 +44,7 @@ remotes::install_github("business-science/modeltime")
 
 # Исходные данные
 
-Поключим небходимые библиотеки.
+Подключим небходимые библиотеки.
 
 ```{r warning=FALSE, message=FALSE}
 
