@@ -9,7 +9,7 @@ headless: true
 # Order that this section appears on the page.
 weight: 80
 
-title: Избарнные публикации
+title: Избранные публикации
 subtitle: ""
 
 content:
