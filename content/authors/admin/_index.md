@@ -9,7 +9,7 @@ interests:
 - Data Science
 - Машинное обучение
 organizations:
-- name: ФБГОУ ВО СПСА ГПС МЧС России
+- name: ФГБОУ ВО СПСА ГПС МЧС России
   url: https://www.sibpsa.ru/
 role: Зав. кафедрой физики, математики и информационных технологий
 social:
