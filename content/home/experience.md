@@ -23,7 +23,7 @@ date_format: Jan 2006
 #   Begin multi-line descriptions with YAML's `|2-` multi-line prefix.
 experience:
   - title: Заведующий кафедрой физики, математики и информационных технологий
-    company: ФБГОУ ВО Сибирская пожарно-спасательная академия ГПС МЧС России
+    company: ФГБОУ ВО Сибирская пожарно-спасательная академия ГПС МЧС России
     company_url: 'http://sibpsa.ru/'
     location: Железногогрск, Красноярский край
     date_start: '2009-07-01'
