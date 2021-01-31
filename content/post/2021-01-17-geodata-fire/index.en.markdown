@@ -156,7 +156,7 @@ available_tags("highway") %>% head(., 10)
 
 ```r
 # проспекты и большие улицы
-streets <- getbb("Novosibirsk Russia")%>%
+streets <- getbb("Novosibirsk Russia") %>%
   opq()%>%
   add_osm_feature(key = "highway", 
                   value = c("motorway", "primary", 
