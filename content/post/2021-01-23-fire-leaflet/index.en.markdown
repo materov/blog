@@ -108,8 +108,11 @@ fire_geo
 Для построения подложки интерактивной карты необходимо в первую очередь выбрать координаты центра карты и базовое увеличение командой `setView()`.
 
 ```r
+lng_center <- 82.9
+lat_center <- 55
+
 leaflet(fire_geo) %>%
-  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  setView(lng = lng_center, lat = lat_center, zoom = 11)  %>% 
   addTiles()
 ```
 
@@ -129,7 +132,7 @@ fire %>%
   select(geo_lat, geo_lon) %>% 
   purrr::set_names("lat", "long") %>% 
   leaflet() %>%
-  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  setView(lng = lng_center, lat = lat_center, zoom = 11)  %>% 
   addTiles() %>% 
   addMarkers()
 ```
@@ -144,7 +147,7 @@ fire %>%
 
 ```r
 leaflet(fire_geo) %>%
-  setView(lng = 82.9, lat = 55, zoom = 11)  %>% 
+  setView(lng = lng_center, lat = lat_center, zoom = 11)  %>% 
   addTiles() %>% 
   addMarkers(
   clusterOptions = markerClusterOptions()
@@ -163,7 +166,7 @@ OpenStreetMap позволяет добавлять на карту различ
 
 ```r
 leaflet() %>% 
-  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  setView(lng = lng_center, lat = lat_center, zoom = 11) %>% 
   addTiles() %>% 
   addProviderTiles(providers$OpenFireMap)
 ) 
@@ -273,7 +276,7 @@ leaflet() %>%
 
 ```r
 leaflet() %>%
-  setView(lng = 82.9, lat = 55, zoom = 11) %>% 
+  setView(lng = lng_center, lat = lat_center, zoom = 11) %>% 
   addTiles(options = providerTileOptions(noWrap = TRUE), 
            group = "Базовая тема (OpenStreetMap)") %>%
   addProviderTiles("CartoDB.DarkMatter", 
@@ -361,7 +364,7 @@ bscols(widths = c(2,NA, NA),
                        shared_fire, column = ~PRIB_TIME, step = 1, width = "100%") 
        ),
   leaflet(shared_fire, width = "100%", height = 600) %>% 
-    setView(lng = 82.9, lat = 55, zoom = 11) %>%
+    setView(lng = lng_center, lat = lat_center, zoom = 11) %>%
     addTiles() %>% 
     addMarkers()
 )
