@@ -69,13 +69,13 @@ url <- "https://raw.githubusercontent.com/materov/blog_data/main/df_hydro.csv"
 df_hydro <- readr::read_csv(url)
 ```
 
-Исходные данные содержат `r format(nrow(df_hydro), big.mark = " ")` записей и имеют две переменных: `date` и `level`, отвечающих за дату наблюдения и уровень воды.
+Исходные данные содержат `r format(nrow(df_hydro), big.mark = " ")` записей и имеют две переменных: `date` и `level`, отвечающих за дату наблюдения и уровень воды воды в метрах над нулем графика поста.
 
 ```{r warning=FALSE, message=FALSE}
 df_hydro
 ```
 
-Сформируем данные для временного ряда: рассмотрим максимальные значения разлива рек.
+Сформируем данные для временного ряда: рассмотрим максимальные значения уровня воды.
 
 ```{r warning=FALSE, message=FALSE}
 fire_time_series_tbl <-
