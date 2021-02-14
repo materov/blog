@@ -32,7 +32,7 @@ projects: []
 
 # Исходные данные
 
-Подключим небходимые библиотеки в {{< icon name="r-project" pack="fab" >}}.
+Подключим необходимые библиотеки в {{< icon name="r-project" pack="fab" >}}.
 
 
 ```r

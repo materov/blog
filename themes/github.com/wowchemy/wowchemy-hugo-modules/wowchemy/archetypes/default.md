@@ -7,8 +7,8 @@ summary: ""
 authors: []
 tags: []
 categories: []
-date: {{ .Date.Day }} {{ index $.Site.Data.mesyatsy (printf "%d" .Date.Month) }} {{ .Date.Year }}
-lastmod: {{ .Lastmod.Day }} {{ index $.Site.Data.mesyatsy (printf "%d" .Lastmod.Month) }} {{ .Lastmod.Year }}
+date: {{ .Date }} 
+lastmod: {{ .Date }} 
 featured: false
 draft: false
 

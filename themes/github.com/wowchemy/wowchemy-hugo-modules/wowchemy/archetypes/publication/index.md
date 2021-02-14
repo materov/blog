@@ -3,11 +3,11 @@
 
 title: "{{ replace .Name "-" " " | title }}"
 authors: []
-date: {{ .Date.Day }} {{ index $.Site.Data.mesyatsy (printf "%d" .Date.Month) }} {{ .Date.Year }}
+date: {{ .Date }} 
 doi: ""
 
 # Schedule page publish date (NOT publication's date).
-publishDate: {{ .Date.Day }} {{ index $.Site.Data.mesyatsy (printf "%d" .Date.Month) }} {{ .Date.Year }}
+publishDate: {{ .Date }} 
 
 # Publication type.
 # Legend: 0 = Uncategorized; 1 = Conference paper; 2 = Journal article;
