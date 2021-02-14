@@ -18,7 +18,7 @@ image:
   preview_only: yes
 projects: []
 ---
-Для работы с географическими данными в языке программирования {{< icon name="r-project" pack="fab" >}} существует большое количество различных библиотек. Хорошим источником по анализу, визуализации и моделированию геоданных может служить книга [Geocomputation with R](https://geocompr.robinlovelace.net/) или учебник [Визуализация и анализ географических данных на языке R](https://tsamsonov.github.io/r-geo-course/index.html).
+Для работы с географическими данными в языке программирования {{< icon name="r-project" pack="fab" >}} существует большое количество различных библиотек. Хорошим источником по анализу, визуализации и моделированию геоданных может служить книга [Geocomputation with R](https://geocompr.robinlovelace.net/) или учебник [Визуализация и анализ географических данных на языке R](https://tsamsonov.github.io/r-geo-course/index.html). 
 
 Замечательный сервис [city roads](https://anvaka.github.io/city-roads/) позволяет по названию города отобразить карты дорог из [OpenStreetMap](https://www.openstreetmap.org/) - свободно доступной базы данных всех местоположений в мире с открытой лицензией. 
 
