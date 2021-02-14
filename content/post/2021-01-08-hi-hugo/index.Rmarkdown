@@ -1,0 +1,568 @@
+---
+title: Использование машинного обучения для анализа временных рядов
+author: admin
+date: '2021-01-09'
+slug: modeltime
+categories: ["R"]
+tags: ["rstats", "временные ряды", "машинное обучение"]
+subtitle: 'прогнозирование временных рядов с помощью одновременного использования нескольких моделей в языке программирования R'
+summary: 'В статье сделан обзор работы с библиотекой `modeltime`, которая использует машинное обучение для моделирования и прогнозирования временных рядов.'
+authors: 
+- admin
+lastmod: '2021-01-17'
+featured: yes
+math: true
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: yes
+projects: []
+---
+
+Под временным рядом обычно понимается последовательность {$y_t$} значений переменной, которые принимают значения через определенные (обычно регулярные) значения времени $t$. Область применения временных рядов очень обширна, временные ряды используются в сейсмологии, метеорологии, экономике, при регистрации значений любых датчиков. Временным рядам посвящено большое количество литературы, в частности, работа с временными рядами в среде {{< icon name="r-project" pack="fab" >}} описана в монографиях [[Shumway & Stoffer](https://www.stat.pitt.edu/stoffer/tsa4/)], [[Hyndman & Athanasopoulos](https://otexts.com/fpp2/)] и [[Мастицкий](https://ranalytics.github.io/tsa-with-r/)].
+
+В нашем случае, в качестве временных рядов рассматривается, например, количество пожаров, регистрируемых в сутки/неделю/месяц или уровень воды в реках. Мы покажем применение достаточно новой библиотеки `modeltime` для моделирования временных рядов с помощью методов машинного обучения. Основные преимущества данной библиотеки:
+
+- использование современных алогритмов машинного обучения;
+- комбинирование нескольких алгоритмов для улучшения результата;
+- работа с несколькими моделями одновременно;
+- настройка гиперпараметров моделей.
+
+Библиотека `modeltime` интегрирована с библиотекой `tidymodels`, что позволяет рассматривать ее в рамках единой экосистемы алгоритмов машинного обучения, основанной на принципах *tidy data*. Узнать больше о  `tidymodels` можно на [сайте библиотеки](https://www.tidymodels.org/) и из новой книги [Kuhn & Silge](https://www.tmwr.org/).
+
+# Установка библиотеки
+
+Стабильную версию библиотеки можно установить из репозитория [CRAN](https://cran.r-project.org/web/packages/modeltime/index.html)
+соответствующей командой:
+```r
+install.packages("modeltime")
+```
+Девелоперская версия доступна на [GitHub](https://business-science.github.io/modeltime/):
+```r
+remotes::install_github("business-science/modeltime")
+```
+
+# Исходные данные
+
+Подключим необходимые библиотеки.
+
+```{r warning=FALSE, message=FALSE}
+
+library(readxl)
+library(magrittr)
+library(tidyverse)
+library(lubridate)
+
+library(tidymodels)
+library(modeltime)
+library(timetk)
+```
+
+Рассмотрим фондовые данные по гидрологии в Российской Федерации за 2008-2015 года[^thanks]. Загрузим данные с **GitHub**:
+
+[^thanks]: Автор выражает благодарность [В.В. Ничепорчуку](https://icm.krasn.ru/personal.php?persid=207) за предоставленные данные.
+
+
+```{r warning=FALSE, message=FALSE}
+url <- "https://raw.githubusercontent.com/materov/blog_data/main/df_hydro.csv"
+
+df_hydro <- readr::read_csv(url)
+```
+
+Исходные данные содержат `r format(nrow(df_hydro), big.mark = " ")` записей и имеют две переменных: `date` и `level`, отвечающих за дату наблюдения и уровень воды воды в метрах над нулем графика поста.
+
+```{r warning=FALSE, message=FALSE}
+df_hydro
+```
+
+Сформируем данные для временного ряда: рассмотрим максимальные значения уровня воды.
+
+```{r warning=FALSE, message=FALSE}
+fire_time_series_tbl <-
+df_hydro %>% 
+  group_by(date) %>% 
+  summarise(value = max(level)) 
+```
+
+Преобразуем `date` в формат даты:
+
+```{r warning=FALSE, message=FALSE}
+fire_time_series_tbl$date %<>% as.Date()
+```
+
+Визуализируем получившийся временной ряд:
+
+```r
+fire_time_series_tbl %>% 
+  ggplot(aes(x = date, y = value)) + geom_line()
+```
+
+{{< figure src="ts_filtered_ml_initial_blog.png" title="Исходный временной ряд" >}}
+
+Из графика видно, что временной ряд имеет периодический характер.
+
+# Моделирование временных рядов
+
+Весь поток операций в `modeltime` можно разбить на следующие 6 шагов, позволяющих выполнить:
+
+1.	Сбор данных и разделение их на обучающую и тестовую выборки.
+2.	Создание и подгонку **нескольких моделей**.
+3.	Добавление подогнанных моделей в *таблицы моделей*.
+4.	Калибровка моделей на тестовое множество.
+5.	Выполнение прогноза для тестового множества и оценка точности.
+6.	*Корректировку моделей* на полный набор данных и прогнозирование на будущие значения.
+
+Кратко покажем реализацию этих шагов. Ниже показана иллюстрация оптимизированного рабочего процесса, рассмотренная на сайте библиотеки.
+
+![Иллюстрация оптимизированного рабочего процесса прогнозирования временного ряда](modeltime_workflow.jpg)
+
+*Шаг 1.* Разбиение на обучающую и тестовую выборку можно делать либо указав временной параметр, либо процентные соотношения.
+
+```{r warning=FALSE, message=FALSE}
+# Разделение выборки на обучающую и тестовую ---------------------------------
+
+# разбиение в соотношении 90% / 10%
+splits <- fire_time_series_tbl %>%  
+  rsample::initial_time_split(prop = 0.9)
+
+# альтернативный вариант
+# splits <- fire_time_series_tbl %>%
+#   time_series_split(assess     = "2 months", 
+#                     cumulative = TRUE)
+```
+
+```r
+splits %>%
+  tk_time_series_cv_plan() %>%
+  plot_time_series_cv_plan(date, value, 
+                           .interactive = FALSE) +
+  labs(title = "Разделение временного ряда на обучающую и тестовую выборку",
+       subtitle = "в качестве тестовой выборки рассмотрены 10% данных",
+       color = "Выборка:") +
+  scale_x_date(date_breaks = "12 months",
+               date_labels = "%Y")
+```
+
+{{< figure src="ts_ml_train_test_blog.png" title="Пример разделения временного ряда на обучающую и тестовую выборку" >}}
+
+*Шаг 2.* Следующим этапом является создание и подгонка моделей. Ключевая особенность `modeltime` заключается в возможности *работы с несколькими моделями одновременно*. Это позволяет сравнивать модели, выбирая наилучшие результаты.
+Вот некоторые стандартные модели встроенные в `modeltime` (полный список моделей, который постоянно дополняется, можно получить на [сайте библиотеки](https://business-science.github.io/modeltime/articles/modeltime-model-list.html)):
+
+- **ARIMA**;
+- линейная регрессия;
+- экспоненциальное сглаживание;
+- **Prophet**;
+- **MARS** (*Multivariate Adaptive Regression Splines*);
+- **Elastic Nets**;
+- **Random Forest**.
+
+Отметим, что `modeltime` позволяет комбинировать алгоритмы, улучшая их, например, в модели **Prophet** можно улучшить ошибки, используя известный алгоритм машинного обучения **XGBoost**, что дает новую модель, которая называется **Prophet Boost**.
+
+Модели машинного обучения более сложны, чем автоматизированные модели. Эта сложность обычно требует *рабочего процесса* (иногда называемого *конвейером* в других языках программирования). Общий процесс протекает следующим образом:
+-	Создание типа модели, так называемого **рецепта** (recipe) предварительной обработки используя `tidymodels`.
+-	Создание спецификаций модели.
+-	Использование рабочего процесса для объединения спецификаций модели, предобработки и подходящей модели.
+
+Построим несколько моделей для данного временного ряда. 
+
+{{< spoiler text="**Нажмите чтобы увидеть код для создания и подгонки моделей**" >}}
+
+1. Линейная регрессия
+
+```{r warning=FALSE, message=FALSE}
+# Создание и подгонка нескольких моделей -------------------------------------
+
+# Модель 1: lm ----
+# Линейная регрессия
+model_fit_lm <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(value ~ as.numeric(date) + factor(month(date), ordered = FALSE),
+      data = training(splits))
+```
+
+2. Классическая модель **ARIMA** с автоопределением параметров
+
+```{r warning=FALSE, message=FALSE}
+# Модель 2: auto_arima ----
+# ARIMA
+model_fit_arima <- arima_reg() %>%
+  set_engine(engine = "auto_arima") %>%
+  fit(value ~ date, data = training(splits))
+```
+
+3. Модель **ARIMA Boost**
+
+```{r warning=FALSE, message=FALSE}
+# Модель 3: arima_boost ----
+# ARIMA с бустингом (уменьшение ошибок с помощью XGBoost)
+model_fit_arima_boosted <- arima_boost(
+  min_n = 2,
+  learn_rate = 0.015) %>%
+  set_engine(engine = "auto_arima_xgboost") %>%
+  fit(value ~ date + as.numeric(date) + 
+        factor(month(date), ordered = F),
+      data = training(splits))
+```
+
+4. Модель **ETS**
+
+```{r warning=FALSE, message=FALSE}
+# Модель 4: ets ----
+# экспоненциальное сглаживание
+model_fit_ets <- exp_smoothing() %>%
+  set_engine(engine = "ets") %>%
+  fit(value ~ date, data = training(splits))
+```
+
+5. Модель **Prophet**
+
+```{r warning=FALSE, message=FALSE}
+# Модель 5: prophet ----
+# Prophet от Facebook
+model_fit_prophet <- prophet_reg() %>%
+  set_engine("prophet", 
+             yearly.seasonality = TRUE) %>%
+  fit(value ~ date, training(splits))
+```
+
+6. Модель **MARS**
+
+```{r warning=FALSE, message=FALSE}
+# Модель 6: MARS ----
+# Пример "рецепта" предобработки
+recipe_spec <- recipe(value ~ date, data = training(splits)) %>%
+  step_date(date, features = "month", ordinal = FALSE) %>%
+  step_mutate(date_num = as.numeric(date)) %>%
+  step_normalize(date_num) %>%
+  step_rm(date)
+```
+
+```{r warning=FALSE, message=FALSE}
+# вид "рецепта"
+recipe_spec %>% prep() %>% juice()
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# спецификации модели MARS (Computational engine: earth)
+model_spec_mars <- mars(mode = "regression") %>%
+  set_engine("earth")
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# собираем модель MARS
+workflow_fit_mars <- workflow()  %>%
+  add_recipe(recipe_spec)    %>%
+  add_model(model_spec_mars) %>%
+  fit(training(splits))
+```
+
+7. Модель **Prophet Boost**
+
+```{r warning=FALSE, message=FALSE}
+# Модель 7: Prophet Boost ----
+# рецепт
+recipe_spec <- recipe(value ~ date, training(splits)) %>%
+  step_timeseries_signature(date) %>%
+  step_rm(contains("am.pm"), contains("hour"), contains("minute"),
+          contains("second"), contains("xts")) %>%
+  step_fourier(date, period = 365, K = 5) %>%
+  step_dummy(all_nominal())
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# спецификации
+model_spec_prophet_boost <- prophet_boost() %>%
+  set_engine("prophet_xgboost", yearly.seasonality = TRUE)
+```
+
+```{r warning=FALSE, message=FALSE}
+# сборка модели
+workflow_fit_prophet_boost <- workflow() %>%
+  add_model(model_spec_prophet_boost)    %>%
+  add_recipe(recipe_spec)                %>%
+  fit(training(splits))
+```
+
+8. Модель **glmnet**
+
+```{r warning=FALSE, message=FALSE}
+# Модель 8: glmnet ----
+# recipe
+recipe_spec <- recipe(value ~ date, training(splits)) %>%
+  step_timeseries_signature(date) %>%
+  step_rm(contains("am.pm"), contains("hour"), contains("minute"),
+          contains("second"), contains("xts")) %>%
+  step_fourier(date, period = 365, K = 5) %>%
+  step_dummy(all_nominal())
+```
+
+```{r warning=FALSE, message=FALSE}
+# просмотр "рецепта"
+recipe_spec %>% prep() %>% juice()
+```
+
+```{r warning=FALSE, message=FALSE}
+# спецификация модели
+model_spec_glmnet <- linear_reg(penalty = 0.01, mixture = 0.5) %>%
+  set_engine("glmnet")
+```
+
+```{r warning=FALSE, message=FALSE}
+# сборка модели glmnet
+workflow_fit_glmnet <- workflow() %>%
+  add_model(model_spec_glmnet) %>%
+  add_recipe(recipe_spec %>% step_rm(date)) %>%
+  fit(training(splits))
+```
+
+9. Модель **Random Forest**
+
+```{r warning=FALSE, message=FALSE}
+# Модель 9: Random Forest ----
+model_spec_rf <- rand_forest(trees = 500, min_n = 50) %>%
+  set_engine("randomForest")
+```
+
+```{r warning=FALSE, message=FALSE}
+# сборка модели Random Forest
+workflow_fit_rf <- workflow() %>%
+  add_model(model_spec_rf) %>%
+  add_recipe(recipe_spec %>% step_rm(date)) %>%
+  fit(training(splits))
+```
+
+{{< /spoiler >}}
+
+*Шаг 3.* Модели прописываются и добавляются в единую *таблицу моделей*, в которой до включения можно настраивать параметры, а затем проходит их подгонка/масштабирование, проверка на соответствие и калибровка по отношению к тестовой выборке. Далее происходит оценка точности качества моделей на тестовой выборке используя различные показатели точности:
+-	MAE – средняя абсолютная ошибка;
+-	MAPE – средняя абсолютная процентная ошибка;
+-	MASE – средняя абсолютная нормированная ошибка;
+-	SMAPE – симметричная средняя абсолютная процентная ошибка;
+-	RMSE – среднеквадратическая ошибка;
+-	RSQ – показатель $R^2$.
+
+```{r warning=FALSE, message=FALSE}
+# Добавление подогнанных моделей в таблицы моделей ------------------------
+
+models_tbl <- modeltime_table(
+    model_fit_lm,
+    model_fit_arima,
+    model_fit_arima_boosted,
+    model_fit_ets,
+    model_fit_prophet,
+    # модели машинного обучения
+    workflow_fit_mars,
+    workflow_fit_prophet_boost,
+    workflow_fit_glmnet,
+    workflow_fit_rf
+)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# просмотр таблицы моделей
+models_tbl
+```
+
+
+*Шаг 4.* *Калибровка*, по сути, - это способ определения доверительных интервалов и метрик точности, при этом калибровочные данные - это спрогнозированные значения и невязки, которые вычисляются на основе данных вне выборки.
+
+
+```{r warning=FALSE, message=FALSE}
+# Калибровка --------------------------------------------------------------
+
+calibration_tbl <- models_tbl %>%
+  modeltime_calibrate(new_data = testing(splits))
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# таблица калиброванных моделей
+# добавились .type и .calibration_data
+calibration_tbl
+```
+
+
+
+*Шаг 5.* Сформированные модели проверяются на тестовых данных и визуализируются.
+
+```r
+calibration_tbl %>%
+  modeltime_forecast(new_data    = testing(splits), 
+                     actual_data = fire_time_series_tbl) %>%
+  filter(.index > "2013-01-01") %>% 
+  plot_modeltime_forecast(.interactive = F) +
+  labs(color = "Модели:",
+       title = "Прогнозирование временного ряда на тестовую выборку")
+```
+
+{{< figure src="ts_ml_forecast_blog.png" title="Пример прогнозирования временного ряда на тестовую выборку" >}}
+
+
+Также, составляется таблица ошибок, использующая рассмотренные выше показатели точности, пример такого рода таблицы показан ниже.
+
+```r
+# таблица ошибок
+calibration_tbl %>%
+  modeltime_accuracy() %>%
+  table_modeltime_accuracy(.interactive = F) 
+```
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+library(tidyverse)
+
+d <- tribble(
+  ~.model_id,
+  ~.model_desc,
+  ~.type,
+  ~mae,
+  ~mape,
+  ~mase,
+  ~smape,
+  ~rmse,
+  ~rsq,
+  #--|--|--|--|--|--|--|--|----
+  1,
+  "LM",
+  "Test",
+  134.13,
+  9.46,
+  7.12,
+  9.5,
+  232.13,
+  0.68,
+  2,
+  "ARIMA(5,0,4) WITH NON-ZERO MEAN",
+  "Test",
+  233.95,
+  16.09,
+  12.42,
+  17.72,
+  406.55,
+  0.02,
+  3,
+  "ARIMA(4,0,5) WITH NON-ZERO MEAN W/ XGBOOST ERRORS",
+  "Test",
+  235.84,
+  16.42,
+  12.52,
+  17.91,
+  403.69,
+  0.02,
+  4,
+  "ETS(M,AD,N)",
+  "Test",
+  325.55,
+  22.08,
+  17.28,
+  27.24,
+  514.37,
+  0.02,
+  5,
+  "PROPHET",
+  "Test",
+  148.64,
+  13.76,
+  7.89,
+  12.76,
+  166.18,
+  0.94,
+  6,
+  "EARTH",
+  "Test",
+  344.41,
+  29.04,
+  18.29,
+  35.21,
+  399.23,
+  0.61,
+  7,
+  "PROPHET W/ XGBOOST ERRORS",
+  "Test",
+  74.83,
+  5.79,
+  3.97,
+  5.75,
+  117.65,
+  0.94,
+  8,
+  "GLMNET",
+  "Test",
+  92.95,
+  6.89,
+  4.94,
+  7.02,
+  148.54,
+  0.89,
+  9,
+  "RANDOMFOREST",
+  "Test",
+  108.05,
+  8.14,
+  5.74,
+  7.77,
+  180.18,
+  0.81
+)
+
+knitr::kable(d, results='asis')
+
+#DT::datatable(
+#  head(d),
+#  options = list(dom = 't'), rownames = FALSE
+#)
+```
+
+
+*Шаг 6.* Заключительный этап состоит в том, чтобы скорректировать модели, распространить их на полный набор данных и спрогнозировать будущие значения. 
+
+{{% callout note %}}
+Как видно из предыдущего шага, не все модели в нашем случае имеют достаточно хорошие показатели ошибок (в частности, показатель $R^2$ должен быть близок к единице, остальные показатели должны быть чем меньше, тем лучше), модели 1-4 и 6 можно удалить из-за низкой точности.
+{{% /callout %}}
+
+```r
+refit_tbl <- calibration_tbl %>%
+  filter(.model_id != 1) %>%
+  filter(.model_id != 2) %>%
+  filter(.model_id != 3) %>%
+  filter(.model_id != 4) %>%
+  filter(.model_id != 6) %>%
+  modeltime_refit(data = fire_time_series_tbl)
+```
+
+Визуализируем прогноз на 1 год вперед.
+
+```r
+refit_tbl %>%
+  modeltime_forecast(h = "1 year", actual_data = fire_time_series_tbl) %>% 
+  filter(.index > "2014-01-01") %>% 
+  plot_modeltime_forecast(.interactive = FALSE) +
+  labs(title    = "Скорректированный прогноз для различных моделей",
+       subtitle = "прогноз на 1 год вперед",
+       color    = "Модели:") + 
+  scale_x_date(date_breaks = "1 year",
+               date_labels = "%Y") 
+```               
+
+
+{{< figure src="ts_ml_forecast_1_year_blog.png" title="Прогноз временного ряда с использованием нескольких моделей" >}}
+
+
+
+
+# Заключение
+
+Мы рассмотрели методы прогнозирования временных рядов на основе современных алгоритмов машинного обучения для составления гидрологического прогноза, что публикуется впервые в применении в вопросам природной и техносферной безопасности. Используя возможности языка программирования {{< icon name="r-project" pack="fab" >}} можно не только разрабатывать модели прогнозирования, но и в последующем делать на их основе актуальные аналитические веб-сервисы на основе **R Markdown** и **Shiny** для практического применения прогнозов, что представляется перспективным направлением.
+
+Отметим, что для улучшения точности прогноза сильно неструктурированных данных, например, при отсутствии явно выраженных сезонных компонент, можно использовать для моделирования нейронные (как правило, RNN, LSTM или CNN) сети, однако это выходит за рамки настоящей статьи, и обучение нейронной сети, – процесс гораздо более трудоемкий, чем рассмотренное в работе моделирование, что может оказаться неэффективным с точки зрения временных затрат.
+
+
+
+
+
+
+
+
+
