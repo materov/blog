@@ -370,7 +370,8 @@ fire_fit %>%
   ) +
   coord_equal()
 ```
-{{< figure src="ROC.png" title="ROC кривая для оценки качества модели" >}}
+
+![plot of chunk unnamed-chunk-16](figure/unnamed-chunk-16-1.png)
 
 # Заключение
 

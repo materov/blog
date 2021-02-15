@@ -282,7 +282,21 @@ fire_fit %>%
   ) +
   coord_equal()
 ```
-{{< figure src="ROC.png" title="ROC кривая для оценки качества модели" >}}
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+fire_fit %>% 
+  collect_predictions() %>%
+  roc_curve(died_cases, .pred_died) %>%
+  ggplot(aes(x = 1 - specificity, y = sensitivity)) +
+  geom_line(size = 1.5, color = "midnightblue") +
+  geom_abline(
+    lty   = 2, 
+    alpha = 0.5,
+    color = "gray50",
+    size  = 1.2
+  ) +
+  coord_equal() + silgelib::theme_plex()
+```
 
 # Заключение
 
